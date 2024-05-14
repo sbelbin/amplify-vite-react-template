@@ -44,7 +44,7 @@ function App() {
             alt="NeuroServo logo"
             height="40%"
             width="40%"
-            src="/public/img/neuroservo.png"
+            src="/img/neuroservo.png"
           />
         </View>
       );
