@@ -7,6 +7,7 @@ import {
   Button,
   Heading,
   Image,
+  Placeholder,
   Text,
   View,
   useAuthenticator,
@@ -208,39 +209,55 @@ function App() {
   const formFields = {
     signIn: {
       username: {
-        placeholder: 'Enter your email',
+        label: 'E-mail:',
+        placeholder: 'Enter your e-mail',
+        isRequired: true
       },
-    },
-    signUp: {
       password: {
         label: 'Password:',
-        placeholder: 'Enter your Password:',
+        placeholder: 'Enter your password',
+        isRequired: true
+      }
+    },
+    signUp: {
+      email: {
+        label: 'E-mail:',
+        placeholder: 'Enter your e-mail',
+        order: 1
+      },
+      password: {
+        label: 'Password:',
+        placeholder: 'Enter your password',
         isRequired: false,
-        order: 2,
+        order: 2
       },
       confirm_password: {
-        label: 'Confirm Password:',
-        order: 1,
+        label: 'Password (confirmation):',
+        placeholder: 'Confirm your password',
+        order: 3
       },
     },
     forceNewPassword: {
       password: {
-        placeholder: 'Enter your Password:',
+        label: 'Password:',
+        placeholder: 'Enter your password',
       },
     },
     forgotPassword: {
       username: {
-        placeholder: 'Enter your email:',
+        label: 'E-mail:',
+        placeholder: 'Enter your e-mail',
       },
     },
     confirmResetPassword: {
       confirmation_code: {
-        placeholder: 'Enter your Confirmation Code:',
-        label: 'New Label',
-        isRequired: false,
+        label: 'Confirmation Code:',
+        placeholder: 'Enter the confirmation code',
+        isRequired: false
       },
       confirm_password: {
-        placeholder: 'Enter your Password Please:',
+        label: 'Password (confirmation):',
+        placeholder: 'Confirm your password',
       },
     },
     setupTotp: {
@@ -249,16 +266,16 @@ function App() {
         totpUsername: 'amplify_qr_test_user',
       },
       confirmation_code: {
-        label: 'New Label',
-        placeholder: 'Enter your Confirmation Code:',
-        isRequired: false,
+        label: 'Confirmation Code:',
+        placeholder: 'Enter the confirmation code',
+        isRequired: false
       },
     },
     confirmSignIn: {
       confirmation_code: {
-        label: 'New Label',
-        placeholder: 'Enter your Confirmation Code:',
-        isRequired: false,
+        label: 'Confirmation Code:',
+        placeholder: 'Enter the confirmation code',
+        isRequired: false
       },
     },
   };
