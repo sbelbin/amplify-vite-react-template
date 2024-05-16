@@ -35,7 +35,7 @@ function SiteNavigationBar(props: NavigationProperties) {
       className="bg-body-tertiary mb-3"
     >
       <Container fluid>
-        <Navbar.Brand href="/home">
+        <Navbar.Toggle aria-controls="navbar_options">
           <img
             src="/img/logo.png"
             width="50"
@@ -43,17 +43,11 @@ function SiteNavigationBar(props: NavigationProperties) {
             className="d-inline-block align-top"
             alt="Home"
           />
-        </Navbar.Brand>
-        {props.isUserLoggedIn && (
-                <Nav.Item className="ms-auto navbar-end-padding">
-                  <Nav.Link onClick={handleUserLogout}>Logout</Nav.Link>
-                </Nav.Item>
-        )}
-        <Navbar.Toggle aria-controls="navbar_options" />
+        </Navbar.Toggle>
         <Navbar.Offcanvas
           id="navbar_options"
           aria-labelledby="navbar_options_title"
-          placement="end"
+          placement="start"
         >
           <Offcanvas.Header closeButton>
             <Offcanvas.Title id="navbar_options_title">Options</Offcanvas.Title>
@@ -89,6 +83,11 @@ function SiteNavigationBar(props: NavigationProperties) {
             </Nav>
           </Offcanvas.Body>
         </Navbar.Offcanvas>
+        {props.isUserLoggedIn && (
+                <Nav.Item className="ms-auto navbar-end-padding">
+                  <Nav.Link onClick={handleUserLogout}>Logout</Nav.Link>
+                </Nav.Item>
+        )}
       </Container>
     </Navbar>
   );
