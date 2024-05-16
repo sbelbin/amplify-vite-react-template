@@ -5,6 +5,11 @@
   text-align: center;
 }
 
+.app_name {
+  color: green;
+  font-family: 'Trebuchet MS';
+}
+
 .logo {
   height: 6em;
   padding: 1.5em;
@@ -41,4 +46,13 @@
 
 .read-the-docs {
   color: #888;
+}
+
+.text-end {
+  color: white;
+  font-family: 'Trebuchet MS';
+}
+
+.todo {
+  color: yellowgreen;
 }

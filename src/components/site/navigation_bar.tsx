@@ -30,8 +30,6 @@ function SiteNavigationBar(props: NavigationProperties) {
 
   return (
     <Navbar
-      bg="light"
-      data-bs-theme="light"
       fixed="top"
       expand={false}
       className="bg-body-tertiary mb-3"

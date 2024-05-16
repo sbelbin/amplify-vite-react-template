@@ -29,16 +29,13 @@ function SessionsSelectPage(props: PageProperties) {
         >
           <Image
             src="/img/logo.png"
-            height="40%"
-            width="40%"
             fluid
           />
         </Col>
         <Col sm={6}>
           <h1 className="font-weight-light">Select a recording session.</h1>
-          <p className="mt-4">
+          <p className="todo">
             TO DO: Present the user with a list of recordings in a grid to select a recording.
-            <br />
             <br />
             Preferably the most recent recordings will appear first. Later, we could add support to save preferences and
             possibly filtering.
