@@ -35,7 +35,20 @@ function SiteNavigationBar(props: NavigationProperties) {
       className="bg-body-tertiary mb-3"
     >
       <Container fluid>
-        <Navbar.Brand href="#" />
+        <Navbar.Brand href="/home">
+          <img
+            src="/img/logo.png"
+            width="50"
+            height="50"
+            className="d-inline-block align-top"
+            alt="Home"
+          />
+        </Navbar.Brand>
+        {props.isUserLoggedIn && (
+                <Nav.Item className="ms-auto navbar-end-padding">
+                  <Nav.Link onClick={handleUserLogout}>Logout</Nav.Link>
+                </Nav.Item>
+        )}
         <Navbar.Toggle aria-controls="navbar_options" />
         <Navbar.Offcanvas
           id="navbar_options"
@@ -47,15 +60,29 @@ function SiteNavigationBar(props: NavigationProperties) {
           </Offcanvas.Header>
           <Offcanvas.Body>
             <Nav className="justify-content-end flex-grow-1 pe-3">
+              <Nav.Link href="/">
+                <img
+                  src="/img/logo.png"
+                  width="25"
+                  height="25"
+                  className="d-inline-block align-top navbar-menu-logo"
+                  alt="Home"
+                />
+                Home
+              </Nav.Link>
+              <br />
               {props.isUserLoggedIn && (
                 <>
-                  <Nav.Link onClick={handleUserLogout}>Logout</Nav.Link>
+                  <Nav.Link onClick={handleUserLogout}>
+                    <strong>Logout</strong>
+                  </Nav.Link>
                 </>
               )}
               {!props.isUserLoggedIn && (
                 <>
-                  <Nav.Link href="/users/login">Login</Nav.Link>
-                  <br />
+                  <Nav.Link href="/users/login">
+                    <strong>Login</strong>
+                  </Nav.Link>
                   <Nav.Link href="/users/sign_up">Sign-Up</Nav.Link>
                 </>
               )}

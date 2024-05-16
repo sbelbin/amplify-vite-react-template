@@ -1,4 +1,5 @@
 import './App.css';
+import 'bootstrap/dist/css/bootstrap.min.css';
 
 import HomePage from './components/home/home_page';
 import UserConfirmSignUpPage from './components/users/confirm_sign_up_page';

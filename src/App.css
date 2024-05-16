@@ -56,3 +56,11 @@
 .todo {
   color: yellowgreen;
 }
+
+.navbar-end-padding {
+  margin-right: 20px;
+}
+
+.navbar-menu-logo {
+  margin-right: 10px;
+}
