@@ -1,39 +1,30 @@
-import { useEffect, useState } from 'react';
-import type { Schema } from "../amplify/data/resource";
-import { generateClient } from "aws-amplify/data";
+import './App.css';
+
+import HomePage from './components/home/home_page';
+import UserConfirmSignUpPage from './components/users/confirm_sign_up_page';
+import UserLoginPage from './components/users/login_page';
+import UserSignUpPage from './components/users/sign_up_page';
+import SessionsSelectPage from './components/sessions/sessions_selection_page';
+import SiteNavigation from './components/common/site_navigation';
+import SiteFooter from './components/common/site_footer';
 
 import {
   Authenticator,
   Button,
   Heading,
   Image,
-  Placeholder,
   Text,
   View,
   useAuthenticator,
   useTheme
 } from '@aws-amplify/ui-react';
 
-import '@aws-amplify/ui-react/styles.css'
+import '@aws-amplify/ui-react/styles.css';
 
-const client = generateClient<Schema>();
+import { useState } from 'react';
+import { Route, Routes } from 'react-router-dom';
 
 function App() {
-  const [todos, setTodos] = useState<Array<Schema["Todo"]["type"]>>([]);
-
-  useEffect(() => {
-    client.models.Todo.observeQuery().subscribe({
-      next: (data) => setTodos([...data.items]),
-    });
-  }, []);
-
-  function createTodo() {
-    client.models.Todo.create({ content: window.prompt("Todo content") });
-  }
-
-  function deleteTodo(id: string) {
-    client.models.Todo.delete({ id });
-  }
 
   const components = {
     Header() {
@@ -42,10 +33,10 @@ function App() {
       return (
         <View textAlign="center" padding={tokens.space.large}>
           <Image
-            alt="NeuroServo logo"
+            alt="logo"
             height="40%"
             width="40%"
-            src="/img/neuroservo.png"
+            src="/img/logo.png"
           />
         </View>
       );
@@ -57,7 +48,7 @@ function App() {
       return (
         <View textAlign="center" padding={tokens.space.large}>
           <Text color={tokens.colors.white}>
-            &copy; All Rights Reserved
+            <br>&copy; 2024 NeuroServo Inc.&nbsp;&nbsp;</br>
           </Text>
         </View>
       );
@@ -72,7 +63,7 @@ function App() {
             padding={`${tokens.space.xl} 0 0 ${tokens.space.xl}`}
             level={3}
           >
-            Sign in to your account
+            Login
           </Heading>
         );
       },
@@ -103,7 +94,7 @@ function App() {
             padding={`${tokens.space.xl} 0 0 ${tokens.space.xl}`}
             level={3}
           >
-            Create a new account
+            Sign-up for a new account
           </Heading>
         );
       },
@@ -118,7 +109,7 @@ function App() {
               size="small"
               variation="link"
             >
-              Back to Sign In
+              Back to Login
             </Button>
           </View>
         );
@@ -280,31 +271,29 @@ function App() {
     },
   };
 
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+
+  function updateLoggedIn(isLoggedIn: boolean) {
+    setIsLoggedIn(isLoggedIn)
+  }
+
   return (
     <Authenticator components={components}
                    formFields={formFields}
                    socialProviders={['google']}>
       {({ signOut, user }) => (
-        <main>
-          <h1>{user?.signInDetails?.loginId}'s todos</h1>
-          <button onClick={createTodo}>+ new</button>
-          <ul>
-            {todos.map((todo) => (
-              <li
-                onClick={() => deleteTodo(todo.id)}
-                key={todo.id}>
-                {todo.content}</li>
-            ))}
-          </ul>
-          <div>
-            🥳 App successfully hosted. Try creating a new todo.
-            <br />
-            <a href="https://next-release-dev.d1ywzrxfkb9wgg.amplifyapp.com/react/start/quickstart/vite-react-app/#step-2-add-delete-to-do-functionality">
-              Review next step of this tutorial.
-            </a>
-          </div>
-          <button onClick={signOut}>Sign out</button>
-        </main>
+        <div>
+        <SiteNavigation isLoggedIn={isLoggedIn} updateLoggedIn={updateLoggedIn} />
+        <Routes>
+          <Route path='*' element={<HomePage isLoggedIn={isLoggedIn} />} />
+          <Route path='/' exact={true} element={<HomePage isLoggedIn={isLoggedIn} />} />
+          <Route path='/users/login' element={<UserLoginPage updateLoggedIn={updateLoggedIn} />} />
+          <Route path='/users/sign_up' element={<UserSignUpPage />} />
+          <Route path='/users/confirm_sign_up' element={<UserConfirmSignUpPage />} />
+          <Route path='/sessions/select' element={<SessionsSelectPage isLoggedIn={isLoggedIn} />} />
+        </Routes>
+        <SiteFooter />
+        </div>
       )}
     </Authenticator>
   );
