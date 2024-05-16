@@ -22,7 +22,7 @@ function SiteNavigationBar(props: NavigationProperties) {
       // await AWS_Auth.signOut();
 
       props.updateUserLoginStatus(false);
-      navigate('/');
+      navigate('/users/logged_out');
     } catch (error) {
       console.error(`Failed to sign-out user. Reason: ${error}`);
     }

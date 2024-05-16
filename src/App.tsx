@@ -4,6 +4,7 @@ import 'bootstrap/dist/css/bootstrap.min.css';
 import HomePage from './components/home/home_page';
 import UserConfirmSignUpPage from './components/users/confirm_sign_up_page';
 import UserLoginPage from './components/users/login_page';
+import UserLoggedOutPage from './components/users/logged_out';
 import UserSignUpPage from './components/users/sign_up_page';
 import SessionsSelectPage from './components/sessions/sessions_selection_page';
 import SiteNavigationBar from './components/site/navigation_bar';
@@ -296,6 +297,10 @@ function App() {
         <Route
           path="/users/login"
           element={<UserLoginPage updateUserLoginStatus={updateUserLoginStatus} />}
+        />
+        <Route
+          path="users/logged_out"
+          element={<UserLoggedOutPage />}
         />
         <Route
           path="/users/sign_up"
