@@ -5,18 +5,18 @@ import Container from 'react-bootstrap/Container';
 import Image from 'react-bootstrap/Image';
 import Row from 'react-bootstrap/Row';
 
-import { useNavigate } from "react-router-dom";
+import { useNavigate } from 'react-router-dom';
 
 interface PageProperties {
-    isLoggedIn: boolean;
-};
+    isUserLoggedIn: boolean;
+}
 
-export default function SessionsSelectPage(props: PageProperties) {
+function SessionsSelectPage(props: PageProperties) {
     const navigate = useNavigate();
 
     useEffect(() => {
         {
-            !props.isLoggedIn && (
+            !props.isUserLoggedIn && (
                 navigate('/')
             );
         }
@@ -28,6 +28,8 @@ export default function SessionsSelectPage(props: PageProperties) {
                 <Col xs={4} sm={6}>
                     <Image
                         src="/img/logo.png"
+                        height="40%"
+                        width="40%"
                         fluid />
                 </Col>
                 <Col sm={6}>
@@ -43,3 +45,5 @@ export default function SessionsSelectPage(props: PageProperties) {
         </Container >
     )
 }
+
+export default SessionsSelectPage;

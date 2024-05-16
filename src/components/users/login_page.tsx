@@ -1,4 +1,4 @@
-import * as AWS_Auth from 'aws-amplify/auth';
+// import * as AWS_Auth from 'aws-amplify/auth';
 
 import { useState } from 'react';
 
@@ -11,10 +11,10 @@ import Row from 'react-bootstrap/Row';
 import { useNavigate, Link } from 'react-router-dom';
 
 interface PageProperties {
-    updateLoggedIn: (param: boolean) => void;
-};
+    updateUserLoginStatus: (isUserLoggedIn: boolean) => void;
+}
 
-export default function UserLoginPage(props: PageProperties) {
+function UserLoginPage(props: PageProperties) {
     const navigate = useNavigate();
 
     const [userName, setUserName] = useState('');
@@ -22,20 +22,19 @@ export default function UserLoginPage(props: PageProperties) {
 
     const handleUserLogin = async () => {
         try {
-            console.debug(`Logging into AWS. userName: ${userName}`);
+            console.debug(`Logging into AWS. userName: ${userName}, userPassword: ${userPassword}`);
 
-            const signInResult = await AWS_Auth.signIn(userName, userPassword);
+            // const signInResult = await AWS_Auth.signIn(userName, userPassword);
+            // if (!signInResult.isSignedIn) {
+            //     return;
+            // }
 
-            props.updateLoggedIn(signInResult.isSignedIn);
-
-            if (signInResult.isSignedIn) {
-                navigate('/sessions/select');
-            }
-
+            props.updateUserLoginStatus(true);
+            navigate('/sessions/select');
         } catch (error) {
             console.error(`Failed to login. Reason: ${error}`);
         }
-    }
+    };
 
     return (
         <Container>
@@ -58,7 +57,7 @@ export default function UserLoginPage(props: PageProperties) {
                         </Form.Group>
 
                         <Button variant="primary" type="button"
-                            onClick={handleUserLogin}>Login &gt;&gt;</Button>
+                            onClick={handleUserLogin}>Login</Button>
                         &nbsp;&nbsp;
                         <Link
                             to='/users/sign_up'>
@@ -73,5 +72,7 @@ export default function UserLoginPage(props: PageProperties) {
                 </Col>
             </Row>
         </Container>
-    )
+    );
 }
+
+export default UserLoginPage;

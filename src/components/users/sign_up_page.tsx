@@ -1,7 +1,6 @@
-import { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+// import * as AWS_Auth from 'aws-amplify/auth';
 
-import * as AWS_Auth from 'aws-amplify/auth';
+import { useState } from 'react';
 
 import Button from 'react-bootstrap/Button';
 import Col from 'react-bootstrap/Col';
@@ -9,7 +8,9 @@ import Container from 'react-bootstrap/Container';
 import Form from 'react-bootstrap/Form';
 import Row from 'react-bootstrap/Row';
 
-export default function UserSignUpPage() {
+import { useNavigate, Link } from 'react-router-dom';
+
+function UserSignUpPage() {
     const navigate = useNavigate();
 
     const [userName, setUserName] = useState('');
@@ -18,24 +19,26 @@ export default function UserSignUpPage() {
 
     const handleUserSignUp = async () => {
         try {
-            console.debug(`Attempting to sign-up. userName: ${userName}, userEmail: ${userEmail}`);
+            console.debug(`Attempting to sign-up. userName: ${userName}, userPassword: ${userPassword}, userEmail: ${userEmail}`);
 
-            const signUpResult =
-                await AWS_Auth.signUp({
-                    username: userName,
-                    password: userPassword,
-                    attributes: {
-                        email: userEmail,
-                    }
-                });
+            // const signUpResult =
+            //     await AWS_Auth.signUp({
+            //         username: userName,
+            //         password: userPassword,
+            //         attributes: {
+            //             email: userEmail,
+            //         }
+            //     });
 
-            if (signUpResult.isSignUpComplete) {
-                navigate('/users/confirm_sign_up');
-            }
+            // if (!signUpResult.isSignUpComplete) {
+            //     return;
+            // }
+
+            navigate('/users/confirm_sign_up');
         } catch (error) {
             console.error(`Failed to sign-up. Reason: ${error}`);
         }
-    }
+    };
 
     return (
         <Container>
@@ -67,7 +70,7 @@ export default function UserSignUpPage() {
                         </Form.Group>
 
                         <Button variant="primary" type="button"
-                            onClick={handleUserSignUp}>Sign-Up &gt;&gt;</Button>
+                            onClick={handleUserSignUp}>Sign-Up</Button>
 
                         &nbsp;&nbsp;
                         <Link
@@ -83,5 +86,7 @@ export default function UserSignUpPage() {
                 </Col>
             </Row>
         </Container>
-    )
+    );
 }
+
+export default UserSignUpPage;

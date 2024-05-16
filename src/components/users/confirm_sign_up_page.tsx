@@ -1,7 +1,6 @@
-import { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+// import * as AWS_Auth from 'aws-amplify/auth';
 
-import * as AWS_Auth from 'aws-amplify/auth';
+import { useState } from 'react';
 
 import Button from 'react-bootstrap/Button';
 import Col from 'react-bootstrap/Col';
@@ -9,27 +8,28 @@ import Container from 'react-bootstrap/Container';
 import Form from 'react-bootstrap/Form';
 import Row from 'react-bootstrap/Row';
 
-export default function UserConfirmSignUpPage() {
+import { useNavigate, Link } from 'react-router-dom';
+
+function UserConfirmSignUpPage() {
     const navigate = useNavigate();
 
     const [userName, setUserName] = useState('');
     const [authenticationCode, setAuthenticationCode] = useState('');
 
-    const handleRegisterConfirmation = async () => {
+    const handleConfirmSignUp = async () => {
         try {
-            console.log('handleRegisterConfirmation')
-            console.log(userName);
-            console.log(authenticationCode);
+            console.debug(`Attempting to confirm user sign-up. userName: ${userName}, authenticationCode: ${authenticationCode}`)
 
-            const confirmSignUpResult = await AWS_Auth.confirmSignUp(userName, authenticationCode);
+            // const confirmSignUpResult = await AWS_Auth.confirmSignUp(userName, authenticationCode);
+            // if (!confirmSignUpResult.isSignUpComplete) {
+            //     return;
+            // }
 
-            if (confirmSignUpResult.isSignUpComplete) {
-                navigate('/users/login');
-            }
+            navigate('/users/login');
         } catch (error) {
             console.error(`Failed to confirm sign-up. Reason: ${error}`);
         }
-    }
+    };
 
     return (
         <Container>
@@ -52,7 +52,7 @@ export default function UserConfirmSignUpPage() {
                         </Form.Group>
 
                         <Button variant="primary" type="button"
-                            onClick={handleRegisterConfirmation}>Confirm &gt;&gt;</Button>
+                            onClick={handleConfirmSignUp}>Confirm</Button>
                         &nbsp;&nbsp;
                         <Link
                             to='/'>
@@ -62,5 +62,7 @@ export default function UserConfirmSignUpPage() {
                 </Col>
             </Row>
         </Container>
-    )
+    );
 }
+
+export default UserConfirmSignUpPage;

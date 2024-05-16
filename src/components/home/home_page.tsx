@@ -1,14 +1,14 @@
-import { Link } from 'react-router-dom';
-
 import Button from 'react-bootstrap/Button';
 import Col from 'react-bootstrap/Col';
 import Container from 'react-bootstrap/Container';
 import Row from 'react-bootstrap/Row';
 import Image from 'react-bootstrap/Image';
 
+import { Link } from 'react-router-dom';
+
 interface PageProperties {
-    isLoggedIn: boolean;
-};
+    isUserLoggedIn: boolean;
+}
 
 export function HomePage(props: PageProperties) {
     return (
@@ -17,10 +17,12 @@ export function HomePage(props: PageProperties) {
                 <Col xs={4} sm={6}>
                     <Image
                         src="/img/logo.png"
+                        height="40%"
+                        width="40%"
                         fluid />
                 </Col>
                 <Col sm={6}>
-                    <h1 className="font-weight-light">NeuroServo Horizon Application</h1>
+                    <h1 className="font-weight-light">NeuroServo Horizon</h1>
                     <p className="mt-4">
                         Lorem Ipsum
                         <br /><br />
@@ -30,25 +32,25 @@ export function HomePage(props: PageProperties) {
                         Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
                     </p>
                     {
-                        !props.isLoggedIn && (
+                        !props.isUserLoggedIn && (
                             <>
                                 <Link
-                                    to='users/login'>
-                                    <Button variant="outline-primary">Login &gt;&gt;</Button>
+                                    to='/users/login'>
+                                    <Button variant="outline-primary">Login</Button>
                                 </Link>
                                 &nbsp;&nbsp;
                                 <Link
                                     to='/users/sign_up'>
-                                    <Button variant="outline-primary">Sign-Up &gt;&gt;</Button>
+                                    <Button variant="outline-primary">Sign-Up</Button>
                                 </Link>
                             </>
                         )
                     }
                     {
-                        props.isLoggedIn && (
+                        props.isUserLoggedIn && (
                             <Link
-                                to='/sessions/select' state={{ isLoggedIn: props.isLoggedIn }}>
-                                <Button variant="outline-primary">Select Sessions &gt;&gt;</Button>
+                                to='/sessions/select' state={{ isUserLoggedIn: props.isUserLoggedIn }}>
+                                <Button variant="outline-primary">Select Sessions</Button>
                             </Link>
                         )
                     }
