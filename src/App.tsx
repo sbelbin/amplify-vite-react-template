@@ -26,7 +26,6 @@ import { useState } from 'react';
 import { Route, Routes } from 'react-router-dom';
 
 function App() {
-
   // const components = {
   //   Header() {
   //     const { tokens } = useTheme();
@@ -280,14 +279,35 @@ function App() {
 
   return (
     <div>
-      <SiteNavigationBar isUserLoggedIn={isUserLoggedIn} updateUserLoginStatus={updateUserLoginStatus} />
+      <SiteNavigationBar
+        isUserLoggedIn={isUserLoggedIn}
+        updateUserLoginStatus={updateUserLoginStatus}
+      />
       <Routes>
-        <Route path='*' element={(<HomePage isUserLoggedIn={isUserLoggedIn} />)} />
-        <Route path='/' element={(<HomePage isUserLoggedIn={isUserLoggedIn} />)} />
-        <Route path='/users/login' element={(<UserLoginPage updateUserLoginStatus={updateUserLoginStatus} />)} />
-        <Route path='/users/sign_up' element={(<UserSignUpPage />)} />
-        <Route path='/users/confirm_sign_up' element={(<UserConfirmSignUpPage />)} />
-        <Route path='/sessions/select' element={(<SessionsSelectPage isUserLoggedIn={isUserLoggedIn} />)} />
+        <Route
+          path="*"
+          element={<HomePage isUserLoggedIn={isUserLoggedIn} />}
+        />
+        <Route
+          path="/"
+          element={<HomePage isUserLoggedIn={isUserLoggedIn} />}
+        />
+        <Route
+          path="/users/login"
+          element={<UserLoginPage updateUserLoginStatus={updateUserLoginStatus} />}
+        />
+        <Route
+          path="/users/sign_up"
+          element={<UserSignUpPage />}
+        />
+        <Route
+          path="/users/confirm_sign_up"
+          element={<UserConfirmSignUpPage />}
+        />
+        <Route
+          path="/sessions/select"
+          element={<SessionsSelectPage isUserLoggedIn={isUserLoggedIn} />}
+        />
       </Routes>
       <SiteFooter />
     </div>
