@@ -83,9 +83,14 @@ function SiteNavigationBar(props: NavigationProperties) {
             </Nav>
           </Offcanvas.Body>
         </Navbar.Offcanvas>
+        {!props.isUserLoggedIn && (
+                <Nav.Item className="ms-auto">
+                  <Nav.Link href="/users/login"><strong>Login</strong></Nav.Link>
+                </Nav.Item>
+        )}
         {props.isUserLoggedIn && (
-                <Nav.Item className="ms-auto navbar-end-padding">
-                  <Nav.Link onClick={handleUserLogout}>Logout</Nav.Link>
+                <Nav.Item className="ms-auto">
+                  <Nav.Link onClick={handleUserLogout}><strong>Logout</strong></Nav.Link>
                 </Nav.Item>
         )}
       </Container>
