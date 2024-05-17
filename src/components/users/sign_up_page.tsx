@@ -1,4 +1,4 @@
-// import * as AWS_Auth from 'aws-amplify/auth';
+import * as AWS_Auth from 'aws-amplify/auth';
 
 import { useState } from 'react';
 
@@ -23,18 +23,17 @@ function UserSignUpPage() {
         `Attempting to sign-up. userName: ${userName}, userPassword: ${userPassword}, userEmail: ${userEmail}`
       );
 
-      // const signUpResult =
-      //     await AWS_Auth.signUp({
-      //         username: userName,
-      //         password: userPassword,
-      //         attributes: {
-      //             email: userEmail,
-      //         }
-      //     });
+      const signUpResult = await AWS_Auth.signUp({
+        username: userName,
+        password: userPassword,
+        attributes: {
+          email: userEmail
+        }
+      });
 
-      // if (!signUpResult.isSignUpComplete) {
-      //     return;
-      // }
+      if (!signUpResult.isSignUpComplete) {
+        return;
+      }
 
       navigate('/users/confirm_sign_up');
     } catch (error) {

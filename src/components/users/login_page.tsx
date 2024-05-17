@@ -1,4 +1,4 @@
-// import * as AWS_Auth from 'aws-amplify/auth';
+import * as AWS_Auth from 'aws-amplify/auth';
 
 import { useState } from 'react';
 
@@ -24,10 +24,10 @@ function UserLoginPage(props: PageProperties) {
     try {
       console.debug(`Logging into AWS. userName: ${userName}, userPassword: ${userPassword}`);
 
-      // const signInResult = await AWS_Auth.signIn(userName, userPassword);
-      // if (!signInResult.isSignedIn) {
-      //     return;
-      // }
+      const signInResult = await AWS_Auth.signIn(userName, userPassword);
+      if (!signInResult.isSignedIn) {
+        return;
+      }
 
       props.updateUserLoginStatus(true);
       navigate('/sessions/select');

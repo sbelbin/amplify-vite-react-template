@@ -1,4 +1,4 @@
-// import * as AWS_Auth from 'aws-amplify/auth';
+import * as AWS_Auth from 'aws-amplify/auth';
 
 import Container from 'react-bootstrap/Container';
 import Nav from 'react-bootstrap/Nav';
@@ -19,7 +19,7 @@ function SiteNavigationBar(props: NavigationProperties) {
     try {
       console.debug('Logging out.');
 
-      // await AWS_Auth.signOut();
+      await AWS_Auth.signOut();
 
       props.updateUserLoginStatus(false);
       navigate('/users/logged_out');
@@ -84,14 +84,18 @@ function SiteNavigationBar(props: NavigationProperties) {
           </Offcanvas.Body>
         </Navbar.Offcanvas>
         {!props.isUserLoggedIn && (
-                <Nav.Item className="ms-auto">
-                  <Nav.Link href="/users/login"><strong>Login</strong></Nav.Link>
-                </Nav.Item>
+          <Nav.Item className="ms-auto">
+            <Nav.Link href="/users/login">
+              <strong>Login</strong>
+            </Nav.Link>
+          </Nav.Item>
         )}
         {props.isUserLoggedIn && (
-                <Nav.Item className="ms-auto">
-                  <Nav.Link onClick={handleUserLogout}><strong>Logout</strong></Nav.Link>
-                </Nav.Item>
+          <Nav.Item className="ms-auto">
+            <Nav.Link onClick={handleUserLogout}>
+              <strong>Logout</strong>
+            </Nav.Link>
+          </Nav.Item>
         )}
       </Container>
     </Navbar>

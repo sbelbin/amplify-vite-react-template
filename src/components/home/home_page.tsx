@@ -24,36 +24,36 @@ export function HomePage(props: PageProperties) {
           />
         </Col>
         <Col sm={6}>
-        <h1 className="app_name">NeuroServo Horizon</h1>
-        <p className="mt-4">
-          Lorem Ipsum
-          <br />
-          <br />
-          Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et
-          dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex
-          ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat
-          nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit
-          anim id est laborum.
-        </p>
-        {!props.isUserLoggedIn && (
-          <>
-            <Link to="/users/login">
-              <Button variant="outline-primary">Login</Button>
+          <h1 className="app_name">NeuroServo Horizon</h1>
+          <p className="mt-4">
+            Lorem Ipsum
+            <br />
+            <br />
+            Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et
+            dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex
+            ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat
+            nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit
+            anim id est laborum.
+          </p>
+          {!props.isUserLoggedIn && (
+            <>
+              <Link to="/users/login">
+                <Button variant="outline-primary">Login</Button>
+              </Link>
+              &nbsp;&nbsp;
+              <Link to="/users/sign_up">
+                <Button variant="outline-primary">Sign-Up</Button>
+              </Link>
+            </>
+          )}
+          {props.isUserLoggedIn && (
+            <Link
+              to="/sessions/select"
+              state={{ isUserLoggedIn: props.isUserLoggedIn }}
+            >
+              <Button variant="outline-primary">Select Sessions</Button>
             </Link>
-            &nbsp;&nbsp;
-            <Link to="/users/sign_up">
-              <Button variant="outline-primary">Sign-Up</Button>
-            </Link>
-          </>
-        )}
-        {props.isUserLoggedIn && (
-          <Link
-            to="/sessions/select"
-            state={{ isUserLoggedIn: props.isUserLoggedIn }}
-          >
-            <Button variant="outline-primary">Select Sessions</Button>
-          </Link>
-        )}
+          )}
         </Col>
       </Row>
     </Container>
