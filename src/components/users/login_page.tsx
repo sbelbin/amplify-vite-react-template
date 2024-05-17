@@ -24,7 +24,7 @@ function UserLoginPage(props: PageProperties) {
     try {
       console.debug(`Logging into AWS. userName: ${userName}, userPassword: ${userPassword}`);
 
-      const signInResult = await AWS_Auth.signIn(userName, userPassword);
+      const signInResult = await AWS_Auth.signIn({ username: userName, password: userPassword });
       if (!signInResult.isSignedIn) {
         return;
       }

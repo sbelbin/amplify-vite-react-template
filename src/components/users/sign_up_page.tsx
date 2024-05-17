@@ -26,8 +26,10 @@ function UserSignUpPage() {
       const signUpResult = await AWS_Auth.signUp({
         username: userName,
         password: userPassword,
-        attributes: {
-          email: userEmail
+        options: {
+          userAttributes: {
+            email: userEmail
+          }
         }
       });
 

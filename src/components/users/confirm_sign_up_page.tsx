@@ -22,7 +22,7 @@ function UserConfirmSignUpPage() {
         `Attempting to confirm user sign-up. userName: ${userName}, authenticationCode: ${authenticationCode}`
       );
 
-      const confirmSignUpResult = await AWS_Auth.confirmSignUp(userName, authenticationCode);
+      const confirmSignUpResult = await AWS_Auth.confirmSignUp({ username: userName, confirmationCode: authenticationCode });
       if (!confirmSignUpResult.isSignUpComplete) {
         return;
       }
