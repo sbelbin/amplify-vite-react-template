@@ -5,7 +5,7 @@ import Nav from 'react-bootstrap/Nav';
 import Navbar from 'react-bootstrap/Navbar';
 import Offcanvas from 'react-bootstrap/Offcanvas';
 
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 
 interface NavigationProperties {
   isUserLoggedIn: boolean;
@@ -13,6 +13,33 @@ interface NavigationProperties {
 }
 
 function SiteNavigationBar(props: NavigationProperties) {
+  const location = useLocation();
+
+  const isHomePage = location.pathname === '/';
+  const isUserLoginPage = location.pathname === '/users/login';
+  const isUserSignUpPage = location.pathname === '/users/sign_up';
+  const isUserConfirmSignUpPage = location.pathname === '/users/confirm_sign_up';
+
+  //
+  // Determine the links & menu options which are accessible the navigation bar, which are
+  // based on the current page and state (such as user login).
+  //
+  // For example:
+  //  a) Given that the user hasn't logged into the application
+  //       and the current page is the login page
+  //      then the site navigation bar presents only these choices:
+  //           - home
+  //           - sign-up
+  //           - confirm sign-up
+  //       and the login & logout choices are shown since there aren't
+  //           meaningful for the current situation.
+  //
+  const showHomeLink = !isHomePage;
+  const showUserLogoutLink = props.isUserLoggedIn;
+  const showUserLoginLink = !isUserLoginPage && !showUserLogoutLink;
+  const showUserSignUpLink = !isUserSignUpPage && !showUserLogoutLink;
+  const showUserConfirmSignUpLink = !isUserConfirmSignUpPage && !showUserLogoutLink;
+
   const navigate = useNavigate();
 
   const handleUserLogout = async () => {
@@ -35,13 +62,14 @@ function SiteNavigationBar(props: NavigationProperties) {
       className="bg-body-tertiary mb-3"
     >
       <Container fluid>
-        <Navbar.Toggle aria-controls="navbar_options">
+        <Navbar.Toggle
+          aria-controls="navbar_options"
+        >
           <img
+            alt="Home"
             src="/img/logo.png"
             width="50"
             height="50"
-            className="d-inline-block align-top"
-            alt="Home"
           />
         </Navbar.Toggle>
         <Navbar.Offcanvas
@@ -54,48 +82,66 @@ function SiteNavigationBar(props: NavigationProperties) {
           </Offcanvas.Header>
           <Offcanvas.Body>
             <Nav className="justify-content-end flex-grow-1 pe-3">
-              <Nav.Link href="/">
-                <img
-                  src="/img/logo.png"
-                  width="25"
-                  height="25"
-                  className="d-inline-block align-top navbar-menu-logo"
-                  alt="Home"
-                />
-                Home
-              </Nav.Link>
-              <br />
-              {props.isUserLoggedIn && (
-                <>
-                  <Nav.Link onClick={handleUserLogout}>
-                    <strong>Logout</strong>
-                  </Nav.Link>
-                </>
+              {showHomeLink && (
+                <Nav.Link href="/">
+                  <img
+                    alt="Home"
+                    className="d-inline-block align-top navbar-menu-logo"
+                    src="/img/logo.png"
+                    width="25"
+                    height="25"
+                  />
+                  Home
+                </Nav.Link>
               )}
-              {!props.isUserLoggedIn && (
-                <>
-                  <Nav.Link href="/users/login">
-                    <strong>Login</strong>
-                  </Nav.Link>
-                  <Nav.Link href="/users/sign_up">Sign-Up</Nav.Link>
-                </>
+              <br />
+              {showUserLogoutLink && (
+                <Nav.Link onClick={handleUserLogout}>
+                  <strong>Logout</strong>
+                </Nav.Link>
+              )}
+              {showUserLoginLink && (
+                <Nav.Link href="/users/login">
+                  <strong>Login</strong>
+                </Nav.Link>
+              )}
+              {!showUserLoginLink && showUserSignUpLink && (
+                <Nav.Link href="/users/sign_up">
+                  <strong>Sign-up</strong>
+                </Nav.Link>
+              )}
+              {showUserLoginLink && showUserSignUpLink && (
+                <Nav.Link href="/users/sign_up">Sign-Up</Nav.Link>
+              )}
+              {showUserConfirmSignUpLink && (
+                <Nav.Link href="/users/confirm_sign_up">Confirm Sign-Up</Nav.Link>
               )}
             </Nav>
           </Offcanvas.Body>
         </Navbar.Offcanvas>
-        {!props.isUserLoggedIn && (
-          <Nav.Item className="ms-auto">
-            <Nav.Link href="/users/login">
-              <strong>Login</strong>
-            </Nav.Link>
-          </Nav.Item>
+        {showUserLogoutLink && (
+          <Nav.Link
+            className="ms-auto"
+            onClick={handleUserLogout}
+          >
+            <strong>Logout</strong>
+          </Nav.Link>
         )}
-        {props.isUserLoggedIn && (
-          <Nav.Item className="ms-auto">
-            <Nav.Link onClick={handleUserLogout}>
-              <strong>Logout</strong>
-            </Nav.Link>
-          </Nav.Item>
+        {showUserLoginLink && (
+          <Nav.Link
+            className="ms-auto"
+            href="/users/login"
+          >
+            <strong>Login</strong>
+          </Nav.Link>
+        )}
+        {!showUserLoginLink && showUserSignUpLink && (
+          <Nav.Link
+            className="ms-auto"
+            href="/users/sign_up"
+          >
+            <strong>Sign-Up</strong>
+          </Nav.Link>
         )}
       </Container>
     </Navbar>

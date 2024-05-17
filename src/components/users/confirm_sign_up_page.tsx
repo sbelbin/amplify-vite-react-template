@@ -3,82 +3,83 @@ import * as AWS_Auth from 'aws-amplify/auth';
 import { useState } from 'react';
 
 import Button from 'react-bootstrap/Button';
-import Col from 'react-bootstrap/Col';
 import Container from 'react-bootstrap/Container';
 import Form from 'react-bootstrap/Form';
-import Row from 'react-bootstrap/Row';
 
-import { useNavigate, Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 
-function UserConfirmSignUpPage() {
+interface PageProperties {
+  updateUserLoginStatus: (isUserLoggedIn: boolean) => void;
+}
+
+function UserConfirmSignUpPage(props: PageProperties) {
   const navigate = useNavigate();
 
   const [userName, setUserName] = useState('');
-  const [authenticationCode, setAuthenticationCode] = useState('');
+  const [confirmationCode, setConfirmationCode] = useState('');
 
-  const handleConfirmSignUp = async () => {
-    try {
-      console.debug(
-        `Attempting to confirm user sign-up. userName: ${userName}, authenticationCode: ${authenticationCode}`
-      );
+  const onSubmitForm = () => {
+    console.debug(
+      `Attempting to confirm user's sign-up. userName: ${userName}, confirmationCode: ${confirmationCode}`
+    );
 
-      const confirmSignUpResult = await AWS_Auth.confirmSignUp({ username: userName, confirmationCode: authenticationCode });
-      if (!confirmSignUpResult.isSignUpComplete) {
-        return;
+    AWS_Auth.confirmSignUp({ username: userName, confirmationCode: confirmationCode })
+    .then((result) => {
+      if (result.isSignUpComplete && result.userId) {
+        props.updateUserLoginStatus(true);
+        navigate('selections/select');
+      } else if (result.isSignUpComplete) {
+        navigate('/users/login');
       }
-
-      navigate('/users/login');
-    } catch (error) {
+    })
+    .catch((error) => {
       console.error(`Failed to confirm sign-up. Reason: ${error}`);
-    }
+    });
   };
 
   return (
     <Container>
-      <Row className="px-4 my-5">
-        <Col>
-          <h1>Sign-Up Confirmation</h1>
-        </Col>
-      </Row>
-      <Row className="px-4 my-5">
-        <Col sm={6}>
-          <Form>
-            <Form.Group
-              className="mb-3"
-              controlId="formBasicText"
-            >
-              <Form.Label>User Name</Form.Label>
-              <Form.Control
-                type="text"
-                placeholder="Enter User Name"
-                onChange={(evt) => setUserName(evt.target.value)}
-              />
-            </Form.Group>
-            <Form.Group
-              className="mb-3"
-              controlId="formBasicText"
-            >
-              <Form.Label>Authentication Code</Form.Label>
-              <Form.Control
-                type="text"
-                placeholder="Enter Authentication Code"
-                onChange={(evt) => setAuthenticationCode(evt.target.value)}
-              />
-            </Form.Group>
-            <Button
-              variant="primary"
-              type="button"
-              onClick={handleConfirmSignUp}
-            >
-              Confirm
+      <h1 className="mb-5">Sign-Up Confirmation</h1>
+      <Form>
+        <Form.Group
+          className="d-flex align-items-start flex-column mb-3"
+          controlId="formHorizontalEmail"
+        >
+          <Form.Label>User Name</Form.Label>
+          <Form.Control
+            required
+            onChange={(evt) => setUserName(evt.target.value)}
+            placeholder="Enter E-mail"
+            type="email"
+          />
+        </Form.Group>
+        <Form.Group
+          className="d-flex align-items-start flex-column mb-3"
+          controlId="formHorizontalText"
+        >
+          <Form.Label>Confirmation Code</Form.Label>
+          <Form.Control
+            required
+            onChange={(evt) => setConfirmationCode(evt.target.value)}
+            placeholder="Enter Confirmation Code"
+            type="text"
+          />
+        </Form.Group>
+        <br/><br/>
+        <div className="d-flex mb-5">
+          <Button
+            className="me-auto"
+            onClick={onSubmitForm}
+          >
+            Confirm
+          </Button>
+          <Link to="/">
+            <Button className="me-auto" >
+              Cancel
             </Button>
-            &nbsp;&nbsp;
-            <Link to="/">
-              <Button variant="outline-primary">Cancel</Button>
-            </Link>
-          </Form>
-        </Col>
-      </Row>
+          </Link>
+        </div>
+      </Form>
     </Container>
   );
 }
