@@ -14,10 +14,7 @@ function UserLoggedOutPage() {
           xs={4}
           sm={6}
         >
-          <Image
-            src="/img/logo.png"
-            fluid
-          />
+          <Image src="/img/logo.png" />
         </Col>
         <Col sm={6}>
           <p>You have been logged out.</p>

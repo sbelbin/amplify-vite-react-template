@@ -11,6 +11,7 @@ import { Link, useNavigate } from 'react-router-dom';
 
 interface PageProperties {
   updateUserLoginStatus: (isUserLoggedIn: boolean) => void;
+  updateUserName: (userName: string | undefined) => void;
 }
 
 function UserLoginPage(props: PageProperties) {
@@ -41,6 +42,7 @@ function UserLoginPage(props: PageProperties) {
       //
       console.debug(`Logged in as userId: ${user?.userId}, userName: ${user?.username}`);
 
+      props.updateUserName(user?.signInDetails?.loginId);
       props.updateUserLoginStatus(true);
       navigate('/sessions/select');
     })

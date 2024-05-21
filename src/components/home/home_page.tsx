@@ -12,50 +12,55 @@ interface PageProperties {
 
 export function HomePage(props: PageProperties) {
   return (
-    <Container>
-      <Row className="px-4 my-5" >
-        <Col
-          xs={4}
-          sm={6}
+    <Container fluid>
+      <h1>
+        <img
+          src="/img/logo.png"
+          width="50"
+          height="auto"
+        />
+        <span className="neuro">NEURO</span>
+        <span className="servo" >SERVO</span>
+      </h1>
+      <h2 className="app-name" >
+        Horizon
+      </h2>
+      <br />
+      <br />
+      <span className="greeting-text">
+        <p><strong>Welcome</strong> to <span className="neuro">NEURO</span><span className="servo" >SERVO</span>'s <span className="app-name">Horizon</span>.</p>
+        <br />
+        <p>
+          This is a cloud-based application allowing to remotely monitor patients' electroencephalogram (EEG) signals as there are being recorded by the <span className="neuro">NEURO</span><span className="servo" >SERVO</span>'s <span className="app-name">VEEGix8</span> device and iPad app.
+        </p>
+      </span>
+      <br/>
+      <br/>
+      {!props.isUserLoggedIn && (
+        <>
+          <Link
+            className="ms-auto"
+            to="/users/login"
+          >
+            <Button variant="primary" >Login</Button>
+          </Link>
+          &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+          <Link
+            className="ms-auto"
+            to="/users/sign_up"
+          >
+            <Button variant="primary" >Sign-Up</Button>
+          </Link>
+        </>
+      )}
+      {props.isUserLoggedIn && (
+        <Link
+          to="/sessions/select"
+          state={{ isUserLoggedIn: props.isUserLoggedIn }}
         >
-          <Image
-            src="/img/logo.png"
-            fluid
-          />
-        </Col>
-        <Col sm={6}>
-          <h1 className="app_name" >NeuroServo Horizon</h1>
-          <p className="mt-4" >
-            Lorem Ipsum
-            <br />
-            <br />
-            Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et
-            dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex
-            ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat
-            nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit
-            anim id est laborum.
-          </p>
-          {!props.isUserLoggedIn && (
-            <>
-              <Link to="/users/login" >
-                <Button variant="primary" >Login</Button>
-              </Link>
-              &nbsp;&nbsp;
-              <Link to="/users/sign_up" >
-                <Button variant="primary" >Sign-Up</Button>
-              </Link>
-            </>
-          )}
-          {props.isUserLoggedIn && (
-            <Link
-              to="/sessions/select"
-              state={{ isUserLoggedIn: props.isUserLoggedIn }}
-            >
-              <Button variant="primary" >Select Sessions</Button>
-            </Link>
-          )}
-        </Col>
-      </Row>
+          <Button variant="primary" >Select Sessions</Button>
+        </Link>
+      )}
     </Container>
   );
 }

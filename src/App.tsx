@@ -22,11 +22,19 @@ function App() {
     setIsUserLoggedIn(isUserLoggedIn);
   }
 
+  const [userName, setUserName] = useState('');
+
+  function updateUserName(userName: string | undefined) {
+    setUserName(userName ?? '');
+  }
+
   return (
     <div>
       <SiteNavigationBar
         isUserLoggedIn={isUserLoggedIn}
         updateUserLoginStatus={updateUserLoginStatus}
+        userName={userName}
+        updateUserName={updateUserName}
       />
       <Routes>
         <Route
@@ -39,7 +47,7 @@ function App() {
         />
         <Route
           path="/users/login"
-          element={<UserLoginPage updateUserLoginStatus={updateUserLoginStatus} />}
+          element={<UserLoginPage updateUserLoginStatus={updateUserLoginStatus} updateUserName={updateUserName} />}
         />
         <Route
           path="users/logged_out"
@@ -51,7 +59,7 @@ function App() {
         />
         <Route
           path="/users/confirm_sign_up"
-          element={<UserConfirmSignUpPage updateUserLoginStatus={updateUserLoginStatus} />}
+          element={<UserConfirmSignUpPage updateUserLoginStatus={updateUserLoginStatus} updateUserName={updateUserName} />}
         />
         <Route
           path="/sessions/select"

@@ -10,14 +10,16 @@ import { useLocation, useNavigate } from 'react-router-dom';
 interface NavigationProperties {
   isUserLoggedIn: boolean;
   updateUserLoginStatus: (isUserLoggedIn: boolean) => void;
+  userName: string | undefined;
+  updateUserName: (userName: string | undefined) => void;
 }
 
 function SiteNavigationBar(props: NavigationProperties) {
   const location = useLocation();
 
-  const isHomePage = location.pathname === '/';
-  const isUserLoginPage = location.pathname === '/users/login';
-  const isUserSignUpPage = location.pathname === '/users/sign_up';
+  const isHomePage              = location.pathname === '/';
+  const isUserLoginPage         = location.pathname === '/users/login';
+  const isUserSignUpPage        = location.pathname === '/users/sign_up';
   const isUserConfirmSignUpPage = location.pathname === '/users/confirm_sign_up';
 
   //
@@ -42,17 +44,16 @@ function SiteNavigationBar(props: NavigationProperties) {
 
   const navigate = useNavigate();
 
-  const handleUserLogout = async () => {
-    try {
-      console.debug('Logging out.');
-
-      await AWS_Auth.signOut();
-
+  const handleUserLogout = () => {
+    AWS_Auth.signOut()
+    .then(() => {
+      props.updateUserName(undefined);
       props.updateUserLoginStatus(false);
       navigate('/users/logged_out');
-    } catch (error) {
-      console.error(`Failed to sign-out user. Reason: ${error}`);
-    }
+    })
+    .catch((error) => {
+      console.error(`Failed to logout. Reason: ${error}`);
+    });
   };
 
   return (
@@ -119,13 +120,18 @@ function SiteNavigationBar(props: NavigationProperties) {
             </Nav>
           </Offcanvas.Body>
         </Navbar.Offcanvas>
-        {showUserLogoutLink && (
-          <Nav.Link
-            className="ms-auto"
-            onClick={handleUserLogout}
-          >
-            <strong>Logout</strong>
-          </Nav.Link>
+        {props.userName && (
+          <Nav.Item className="ms-auto" >
+            <Nav.Item>
+              {props.userName}
+            </Nav.Item>
+            <Nav.Link
+              className="ms-auto"
+              onClick={handleUserLogout}
+            >
+              <strong>Logout</strong>
+            </Nav.Link>
+          </Nav.Item>
         )}
         {showUserLoginLink && (
           <Nav.Link

@@ -5,8 +5,8 @@
   text-align: center;
 }
 
-.app_name {
-  color: green;
+.app-name {
+  color: rgb(143, 235, 143);
   font-family: 'Trebuchet MS';
 }
 
@@ -63,4 +63,18 @@
 
 .navbar-menu-logo {
   margin-right: 10px;
+}
+
+.neuro {
+  color: black;
+  font-family: Verdana, Geneva, Tahoma, sans-serif;
+}
+
+.servo {
+  color: grey;
+  font-family: Verdana, Geneva, Tahoma, sans-serif;
+}
+
+.greeting-text {
+  color: white;
 }
