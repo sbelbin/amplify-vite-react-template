@@ -38,11 +38,11 @@ export function HomePage(props: PageProperties) {
           {!props.isUserLoggedIn && (
             <>
               <Link to="/users/login">
-                <Button variant="outline-primary">Login</Button>
+                <Button variant="primary">Login</Button>
               </Link>
               &nbsp;&nbsp;
               <Link to="/users/sign_up">
-                <Button variant="outline-primary">Sign-Up</Button>
+                <Button variant="primary">Sign-Up</Button>
               </Link>
             </>
           )}
@@ -51,7 +51,7 @@ export function HomePage(props: PageProperties) {
               to="/sessions/select"
               state={{ isUserLoggedIn: props.isUserLoggedIn }}
             >
-              <Button variant="outline-primary">Select Sessions</Button>
+              <Button variant="primary">Select Sessions</Button>
             </Link>
           )}
         </Col>

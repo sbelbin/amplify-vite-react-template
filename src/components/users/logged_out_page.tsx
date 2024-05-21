@@ -26,7 +26,7 @@ function UserLoggedOutPage() {
         </Col>
       </Row>
       <Link to="/">
-        <Button variant="outline-primary">OK</Button>
+        <Button variant="primary">OK</Button>
       </Link>
     </Container>
   );

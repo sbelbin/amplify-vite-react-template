@@ -26,7 +26,12 @@ function UserLoginPage(props: PageProperties) {
       if (result.isSignedIn) {
         props.updateUserLoginStatus(true);
         navigate('/sessions/select');
+
+        return AWS_Auth.getCurrentUser();
       }
+    })
+    .then((user) => {
+      console.debug(`Logged in as userId: ${user?.userId}, userName: ${user?.username}`);
     })
     .catch((error) => {
       console.error(`Failed to login. Reason: ${error}`);
