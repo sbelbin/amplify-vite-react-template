@@ -20,9 +20,8 @@ function UserLoggedOutPage() {
           />
         </Col>
         <Col sm={6}>
-          <p className="todo">
-            You have been logged out. Click <strong>OK</strong> to return to the home page.
-          </p>
+          <p>You have been logged out.</p>
+          <p>Click <strong>OK</strong> to return back to the home page.</p>
         </Col>
       </Row>
       <Link to="/">

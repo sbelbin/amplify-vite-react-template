@@ -67,17 +67,20 @@ function UserConfirmSignUpPage(props: PageProperties) {
         </Form.Group>
         <br/><br/>
         <div className="d-flex mb-5">
-          <Button
+          <Link
             className="me-auto"
+            to="/"
+          >
+            <Button>
+              Cancel
+            </Button>
+          </Link>
+          <Button
+            className="mr-auto"
             onClick={onSubmitForm}
           >
             Confirm
           </Button>
-          <Link to="/">
-            <Button className="me-auto" >
-              Cancel
-            </Button>
-          </Link>
         </div>
       </Form>
     </Container>

@@ -67,18 +67,21 @@ function UserLoginPage(props: PageProperties) {
           />
         </Form.Group>
         <br/><br/>
-        <div className="d-flex mb-5">
-          <Button
+        <div className="d-flex mb-5" >
+          <Link
             className="me-auto"
+            to="/"
+          >
+            <Button>
+              Cancel
+            </Button>
+          </Link>
+          <Button
+            className="mr-auto"
             onClick={onSubmitForm}
           >
             Login
           </Button>
-          <Link to="/">
-            <Button className="me-auto" >
-              Cancel
-            </Button>
-          </Link>
         </div>
       </Form>
     </Container>
