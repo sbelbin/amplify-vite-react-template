@@ -7,7 +7,6 @@ import {
   Button,
   Heading,
   Image,
-  Placeholder,
   Text,
   View,
   useAuthenticator,
