@@ -13,7 +13,7 @@ interface PageProperties {
 export function HomePage(props: PageProperties) {
   return (
     <Container>
-      <Row className="px-4 my-5">
+      <Row className="px-4 my-5" >
         <Col
           xs={4}
           sm={6}
@@ -24,8 +24,8 @@ export function HomePage(props: PageProperties) {
           />
         </Col>
         <Col sm={6}>
-          <h1 className="app_name">NeuroServo Horizon</h1>
-          <p className="mt-4">
+          <h1 className="app_name" >NeuroServo Horizon</h1>
+          <p className="mt-4" >
             Lorem Ipsum
             <br />
             <br />
@@ -37,12 +37,12 @@ export function HomePage(props: PageProperties) {
           </p>
           {!props.isUserLoggedIn && (
             <>
-              <Link to="/users/login">
-                <Button variant="primary">Login</Button>
+              <Link to="/users/login" >
+                <Button variant="primary" >Login</Button>
               </Link>
               &nbsp;&nbsp;
-              <Link to="/users/sign_up">
-                <Button variant="primary">Sign-Up</Button>
+              <Link to="/users/sign_up" >
+                <Button variant="primary" >Sign-Up</Button>
               </Link>
             </>
           )}
@@ -51,7 +51,7 @@ export function HomePage(props: PageProperties) {
               to="/sessions/select"
               state={{ isUserLoggedIn: props.isUserLoggedIn }}
             >
-              <Button variant="primary">Select Sessions</Button>
+              <Button variant="primary" >Select Sessions</Button>
             </Link>
           )}
         </Col>

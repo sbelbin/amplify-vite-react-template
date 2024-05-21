@@ -1,6 +1,7 @@
 import * as AWS_Auth from 'aws-amplify/auth';
 
 import { useState } from 'react';
+import { Toast, ToastContainer } from 'react-bootstrap';
 
 import Button from 'react-bootstrap/Button';
 import Container from 'react-bootstrap/Container';
@@ -11,14 +12,15 @@ import { Link, useNavigate } from 'react-router-dom';
 function UserSignUpPage() {
   const navigate = useNavigate();
 
+  const [errorTitle, setErrorTitle] = useState('');
+  const [errorMessage, setErrorMessage] = useState('');
+  const [showError, setShowError] = useState(false);
+  const toggleShowError = () => setShowError(!showError);
+
   const [userName, setUserName] = useState('');
   const [userPassword, setUserPassword] = useState('');
 
   const onSubmitForm = () => {
-    console.debug(
-      `Attempting to sign-up. userName: ${userName}, userPassword: ${userPassword}`
-    );
-
     AWS_Auth.signUp({
       username: userName,
       password: userPassword,
@@ -37,13 +39,16 @@ function UserSignUpPage() {
       }
     })
     .catch((error) => {
-      console.error(`Failed to sign-up. Reason: ${error}`);
+      setErrorTitle('Failed to sign-up.');
+      const errorMessage = `${error}`.split(':').pop() ?? `${error}`;
+      setErrorMessage(errorMessage);
+      setShowError(true);
     });
   };
 
   return (
     <Container>
-      <h1 className="mb-5">Sign-Up</h1>
+      <h1 className="mb-5" >Sign-Up</h1>
       <Form>
         <Form.Group
             className="d-flex align-items-start flex-column mb-3"
@@ -70,7 +75,7 @@ function UserSignUpPage() {
           />
         </Form.Group>
         <br/><br/>
-        <div className="d-flex mb-5">
+        <div className="d-flex mb-5" >
         <Link
             className="me-auto"
             to="/"
@@ -87,6 +92,26 @@ function UserSignUpPage() {
           </Button>
         </div>
       </Form>
+      <div className="relative" >
+        <ToastContainer>
+          <Toast
+            autohide
+            bg="danger"
+            delay={5000}
+            show={showError}
+            onClose={toggleShowError}
+          >
+            <Toast.Header>
+              <strong className="me-auto" >
+                {errorTitle}
+              </strong>
+            </Toast.Header>
+            <Toast.Body>
+              {errorMessage}
+            </Toast.Body>
+          </Toast>
+        </ToastContainer>
+      </div>
     </Container>
   );
 }

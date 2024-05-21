@@ -1,6 +1,7 @@
 import * as AWS_Auth from 'aws-amplify/auth';
 
 import { useState } from 'react';
+import { Toast, ToastContainer } from 'react-bootstrap';
 
 import Button from 'react-bootstrap/Button';
 import Container from 'react-bootstrap/Container';
@@ -15,14 +16,15 @@ interface PageProperties {
 function UserConfirmSignUpPage(props: PageProperties) {
   const navigate = useNavigate();
 
+  const [errorTitle, setErrorTitle] = useState('');
+  const [errorMessage, setErrorMessage] = useState('');
+  const [showError, setShowError] = useState(false);
+  const toggleShowError = () => setShowError(!showError);
+
   const [userName, setUserName] = useState('');
   const [confirmationCode, setConfirmationCode] = useState('');
 
   const onSubmitForm = () => {
-    console.debug(
-      `Attempting to confirm user's sign-up. userName: ${userName}, confirmationCode: ${confirmationCode}`
-    );
-
     AWS_Auth.confirmSignUp({ username: userName, confirmationCode: confirmationCode })
     .then((result) => {
       if (result.isSignUpComplete && result.userId) {
@@ -33,13 +35,16 @@ function UserConfirmSignUpPage(props: PageProperties) {
       }
     })
     .catch((error) => {
-      console.error(`Failed to confirm sign-up. Reason: ${error}`);
+      setErrorTitle('Failed to confirm sign-up.');
+      const errorMessage = `${error}`.split(':').pop() ?? `${error}`;
+      setErrorMessage(errorMessage);
+      setShowError(true);
     });
   };
 
   return (
     <Container>
-      <h1 className="mb-5">Sign-Up Confirmation</h1>
+      <h1 className="mb-5" >Sign-Up Confirmation</h1>
       <Form>
         <Form.Group
           className="d-flex align-items-start flex-column mb-3"
@@ -66,7 +71,7 @@ function UserConfirmSignUpPage(props: PageProperties) {
           />
         </Form.Group>
         <br/><br/>
-        <div className="d-flex mb-5">
+        <div className="d-flex mb-5" >
           <Link
             className="me-auto"
             to="/"
@@ -83,6 +88,26 @@ function UserConfirmSignUpPage(props: PageProperties) {
           </Button>
         </div>
       </Form>
+      <div className="relative" >
+        <ToastContainer>
+          <Toast
+            autohide
+            bg="danger"
+            delay={5000}
+            show={showError}
+            onClose={toggleShowError}
+          >
+            <Toast.Header>
+              <strong className="me-auto" >
+                {errorTitle}
+              </strong>
+            </Toast.Header>
+            <Toast.Body>
+              {errorMessage}
+            </Toast.Body>
+          </Toast>
+        </ToastContainer>
+      </div>
     </Container>
   );
 }

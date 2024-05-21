@@ -9,7 +9,7 @@ import { Link } from 'react-router-dom';
 function UserLoggedOutPage() {
   return (
     <Container>
-      <Row className="px-4 my-5">
+      <Row className="px-4 my-5" >
         <Col
           xs={4}
           sm={6}
@@ -24,8 +24,8 @@ function UserLoggedOutPage() {
           <p>Click <strong>OK</strong> to return back to the home page.</p>
         </Col>
       </Row>
-      <Link to="/">
-        <Button variant="primary">OK</Button>
+      <Link to="/" >
+        <Button variant="primary" >OK</Button>
       </Link>
     </Container>
   );

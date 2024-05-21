@@ -78,12 +78,12 @@ function SiteNavigationBar(props: NavigationProperties) {
           placement="start"
         >
           <Offcanvas.Header closeButton>
-            <Offcanvas.Title id="navbar_options_title">Options</Offcanvas.Title>
+            <Offcanvas.Title id="navbar_options_title" >Options</Offcanvas.Title>
           </Offcanvas.Header>
           <Offcanvas.Body>
-            <Nav className="justify-content-end flex-grow-1 pe-3">
+            <Nav className="justify-content-end flex-grow-1 pe-3" >
               {showHomeLink && (
-                <Nav.Link href="/">
+                <Nav.Link href="/" >
                   <img
                     alt="Home"
                     className="d-inline-block align-top navbar-menu-logo"
@@ -101,20 +101,20 @@ function SiteNavigationBar(props: NavigationProperties) {
                 </Nav.Link>
               )}
               {showUserLoginLink && (
-                <Nav.Link href="/users/login">
+                <Nav.Link href="/users/login" >
                   <strong>Login</strong>
                 </Nav.Link>
               )}
               {!showUserLoginLink && showUserSignUpLink && (
-                <Nav.Link href="/users/sign_up">
+                <Nav.Link href="/users/sign_up" >
                   <strong>Sign-up</strong>
                 </Nav.Link>
               )}
               {showUserLoginLink && showUserSignUpLink && (
-                <Nav.Link href="/users/sign_up">Sign-Up</Nav.Link>
+                <Nav.Link href="/users/sign_up" >Sign-Up</Nav.Link>
               )}
               {showUserConfirmSignUpLink && (
-                <Nav.Link href="/users/confirm_sign_up">Confirm Sign-Up</Nav.Link>
+                <Nav.Link href="/users/confirm_sign_up" >Confirm Sign-Up</Nav.Link>
               )}
             </Nav>
           </Offcanvas.Body>
