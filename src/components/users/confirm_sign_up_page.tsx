@@ -57,6 +57,7 @@ function UserConfirmSignUpPage(props: PageProperties) {
             onChange={(evt) => setUserName(evt.target.value)}
             placeholder="Enter E-mail"
             required
+            sx={{ input: { color: 'white' } }}
             type="email"
           />
         </Form.Group>
@@ -70,6 +71,7 @@ function UserConfirmSignUpPage(props: PageProperties) {
             onChange={(evt) => setConfirmationCode(evt.target.value)}
             placeholder="Enter Confirmation Code"
             required
+            sx={{ input: { color: 'white' } }}
             type="text"
           />
         </Form.Group>

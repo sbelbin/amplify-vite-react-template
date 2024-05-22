@@ -76,6 +76,7 @@ function UserLoginPage(props: PageProperties) {
             onChange={(evt) => setUserName(evt.target.value)}
             placeholder="Enter E-mail"
             required
+            sx={{ input: { color: 'white' } }}
             type="email"
           />
         </Form.Group>
@@ -92,6 +93,7 @@ function UserLoginPage(props: PageProperties) {
             onChange={(evt) => setUserPassword(evt.target.value)}
             placeholder="Enter Password"
             required
+            sx={{ input: { color: 'white' } }}
             type={ isUserPasswordVisible ? "text" : "password" }
           />
         </Form.Group>
