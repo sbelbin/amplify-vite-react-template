@@ -12,29 +12,45 @@ import SiteFooter from './components/site/footer';
 
 import { useState } from 'react';
 
-import { Route, Routes } from 'react-router-dom';
+import { Route, Routes, useNavigate } from 'react-router-dom';
 
 function App() {
-
-  const [isUserLoggedIn, setIsUserLoggedIn] = useState(false);
-
-  function updateUserLoginStatus(isUserLoggedIn: boolean) {
-    setIsUserLoggedIn(isUserLoggedIn);
-  }
+  const navigate = useNavigate();
 
   const [userName, setUserName] = useState('');
 
-  function updateUserName(userName: string | undefined) {
-    setUserName(userName ?? '');
+  function isUserLoggedIn(): boolean {
+    return !!userName;
+  }
+
+  //
+  // Application callback indicating when a user is logged into the application.
+  //
+  // \notes
+  //   The user name is the underlying unique identifier assigned to a person that is
+  //   stored in the user pool. In principal a user could login using an E-mail address
+  //   or a phone number. However, it's their user name that the application presents in
+  //   the site navigation bar.
+  //
+  function onUserLoggedIn(userName: string): void {
+    setUserName(userName);
+    navigate('/sessions/select');
+  }
+
+  //
+  // Application callback indicating when the user has logged out from the application.
+  //
+  function onUserLoggedOut(): void {
+    setUserName('');
+    navigate('/users/logged_out');
   }
 
   return (
     <div>
       <SiteNavigationBar
-        isUserLoggedIn={isUserLoggedIn}
-        updateUserLoginStatus={updateUserLoginStatus}
         userName={userName}
-        updateUserName={updateUserName}
+        isUserLoggedIn={isUserLoggedIn}
+        onUserLoggedOut={onUserLoggedOut}
       />
       <Routes>
         <Route
@@ -47,10 +63,10 @@ function App() {
         />
         <Route
           path="/users/login"
-          element={<UserLoginPage updateUserLoginStatus={updateUserLoginStatus} updateUserName={updateUserName} />}
+          element={<UserLoginPage onUserLoggedIn={onUserLoggedIn} />}
         />
         <Route
-          path="users/logged_out"
+          path="/users/logged_out"
           element={<UserLoggedOutPage />}
         />
         <Route
@@ -59,7 +75,7 @@ function App() {
         />
         <Route
           path="/users/confirm_sign_up"
-          element={<UserConfirmSignUpPage updateUserLoginStatus={updateUserLoginStatus} updateUserName={updateUserName} />}
+          element={<UserConfirmSignUpPage onUserLoggedIn={onUserLoggedIn} />}
         />
         <Route
           path="/sessions/select"

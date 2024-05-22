@@ -10,8 +10,7 @@ import Form from 'react-bootstrap/Form';
 import { Link, useNavigate } from 'react-router-dom';
 
 interface PageProperties {
-  updateUserLoginStatus: (isUserLoggedIn: boolean) => void;
-  updateUserName: (userName: string | undefined) => void;
+  onUserLoggedIn: (userName: string) => void;
 }
 
 function UserConfirmSignUpPage(props: PageProperties) {
@@ -29,9 +28,7 @@ function UserConfirmSignUpPage(props: PageProperties) {
     AWS_Auth.confirmSignUp({ username: userName, confirmationCode: confirmationCode })
     .then((result) => {
       if (result.isSignUpComplete && result.userId) {
-        props.updateUserName(result.userId);
-        props.updateUserLoginStatus(true);
-        navigate('selections/select');
+        props.onUserLoggedIn(result.userId);
       } else if (result.isSignUpComplete) {
         navigate('/users/login');
       }

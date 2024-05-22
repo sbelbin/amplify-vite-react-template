@@ -5,13 +5,12 @@ import Nav from 'react-bootstrap/Nav';
 import Navbar from 'react-bootstrap/Navbar';
 import Offcanvas from 'react-bootstrap/Offcanvas';
 
-import { useLocation, useNavigate } from 'react-router-dom';
+import { useLocation } from 'react-router-dom';
 
 interface NavigationProperties {
-  isUserLoggedIn: boolean;
-  updateUserLoginStatus: (isUserLoggedIn: boolean) => void;
   userName: string | undefined;
-  updateUserName: (userName: string | undefined) => void;
+  isUserLoggedIn: () => boolean;
+  onUserLoggedOut: () => void;
 }
 
 function SiteNavigationBar(props: NavigationProperties) {
@@ -37,19 +36,15 @@ function SiteNavigationBar(props: NavigationProperties) {
   //           meaningful for the current situation.
   //
   const showHomeLink = !isHomePage;
-  const showUserLogoutLink = props.isUserLoggedIn;
+  const showUserLogoutLink = props.isUserLoggedIn();
   const showUserLoginLink = !isUserLoginPage && !showUserLogoutLink;
   const showUserSignUpLink = !isUserSignUpPage && !showUserLogoutLink;
   const showUserConfirmSignUpLink = !isUserConfirmSignUpPage && !showUserLogoutLink;
 
-  const navigate = useNavigate();
-
   const handleUserLogout = () => {
     AWS_Auth.signOut()
     .then(() => {
-      props.updateUserName(undefined);
-      props.updateUserLoginStatus(false);
-      navigate('/users/logged_out');
+      props.onUserLoggedOut();
     })
     .catch((error) => {
       console.error(`Failed to logout. Reason: ${error}`);
@@ -70,7 +65,7 @@ function SiteNavigationBar(props: NavigationProperties) {
             alt="Home"
             src="/img/logo.png"
             width="50"
-            height="50"
+            height="auto"
           />
         </Navbar.Toggle>
         <Navbar.Offcanvas
@@ -90,7 +85,7 @@ function SiteNavigationBar(props: NavigationProperties) {
                     className="d-inline-block align-top navbar-menu-logo"
                     src="/img/logo.png"
                     width="25"
-                    height="25"
+                    height="auto"
                   />
                   Home
                 </Nav.Link>
@@ -120,15 +115,12 @@ function SiteNavigationBar(props: NavigationProperties) {
             </Nav>
           </Offcanvas.Body>
         </Navbar.Offcanvas>
-        {props.userName && (
-          <Nav.Item className="ms-auto" >
+        {props.isUserLoggedIn() && (
+          <Nav.Item>
             <Nav.Item>
               {props.userName}
             </Nav.Item>
-            <Nav.Link
-              className="ms-auto"
-              onClick={handleUserLogout}
-            >
+            <Nav.Link onClick={handleUserLogout} >
               <strong>Logout</strong>
             </Nav.Link>
           </Nav.Item>

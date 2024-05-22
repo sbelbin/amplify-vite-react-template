@@ -1,26 +1,31 @@
 import Button from 'react-bootstrap/Button';
-import Col from 'react-bootstrap/Col';
 import Container from 'react-bootstrap/Container';
-import Image from 'react-bootstrap/Image';
-import Row from 'react-bootstrap/Row';
 
 import { Link } from 'react-router-dom';
 
 function UserLoggedOutPage() {
   return (
-    <Container>
-      <Row className="px-4 my-5" >
-        <Col
-          xs={4}
-          sm={6}
-        >
-          <Image src="/img/logo.png" />
-        </Col>
-        <Col sm={6}>
-          <p>You have been logged out.</p>
-          <p>Click <strong>OK</strong> to return back to the home page.</p>
-        </Col>
-      </Row>
+    <Container fluid>
+      <h1>
+        <img
+          src="/img/logo.png"
+          width="50"
+          height="auto"
+        />
+        <span className="neuro">NEURO</span>
+        <span className="servo" >SERVO</span>
+      </h1>
+      <h2 className="app-name" >
+        Horizon
+      </h2>
+      <br />
+      <br />
+      <span className="greeting-text">
+        <p>You have been logged out of the application.</p>
+        <p>Click <strong>OK</strong> to return back to the home page.</p>
+      </span>
+      <br />
+      <br />
       <Link to="/" >
         <Button variant="primary" >OK</Button>
       </Link>

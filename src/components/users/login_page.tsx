@@ -10,8 +10,7 @@ import Form from 'react-bootstrap/Form';
 import { Link, useNavigate } from 'react-router-dom';
 
 interface PageProperties {
-  updateUserLoginStatus: (isUserLoggedIn: boolean) => void;
-  updateUserName: (userName: string | undefined) => void;
+  onUserLoggedIn: (userName: string) => void;
 }
 
 function UserLoginPage(props: PageProperties) {
@@ -33,18 +32,8 @@ function UserLoginPage(props: PageProperties) {
       }
     })
     .then((user) => {
-      //
-      // \todo
-      //   - Set the cloud application user credentials so that fetching the following
-      //     records, recording's EEG readings and video are only for valid user accounts.
-      //
-      //   - Nice to have. Revise the user details on the site navigation bar.
-      //
-      console.debug(`Logged in as userId: ${user?.userId}, userName: ${user?.username}`);
-
-      props.updateUserName(user?.signInDetails?.loginId);
-      props.updateUserLoginStatus(true);
-      navigate('/sessions/select');
+      const userId = user?.signInDetails?.loginId ?? userName;
+      props.onUserLoggedIn(userId);
     })
     .catch((error) => {
       setErrorTitle('Failed to login.');

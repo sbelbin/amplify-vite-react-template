@@ -1,14 +1,11 @@
 import Button from 'react-bootstrap/Button';
-import Col from 'react-bootstrap/Col';
 import Container from 'react-bootstrap/Container';
-import Row from 'react-bootstrap/Row';
-import Image from 'react-bootstrap/Image';
 
 import { Link } from 'react-router-dom';
 
 interface PageProperties {
-  isUserLoggedIn: boolean;
-}
+  isUserLoggedIn: () => boolean;
+};
 
 export function HomePage(props: PageProperties) {
   return (
@@ -31,12 +28,12 @@ export function HomePage(props: PageProperties) {
         <p><strong>Welcome</strong> to <span className="neuro">NEURO</span><span className="servo" >SERVO</span>'s <span className="app-name">Horizon</span>.</p>
         <br />
         <p>
-          This is a cloud-based application allowing to remotely monitor patients' electroencephalogram (EEG) signals as there are being recorded by the <span className="neuro">NEURO</span><span className="servo" >SERVO</span>'s <span className="app-name">VEEGix8</span> device and iPad app.
+          This is a cloud-based application allowing to remotely monitor the live-feed of patients' electroencephalogram (EEG) signals as there are being recorded by the <span className="neuro">NEURO</span><span className="servo" >SERVO</span>'s <span className="app-name">VEEGix8</span> device and iPad app. Additionally, it can also be used to review previous recording sessions.
         </p>
       </span>
       <br/>
       <br/>
-      {!props.isUserLoggedIn && (
+      {!props.isUserLoggedIn() && (
         <>
           <Link
             className="ms-auto"
@@ -53,7 +50,7 @@ export function HomePage(props: PageProperties) {
           </Link>
         </>
       )}
-      {props.isUserLoggedIn && (
+      {props.isUserLoggedIn() && (
         <Link
           to="/sessions/select"
           state={{ isUserLoggedIn: props.isUserLoggedIn }}
