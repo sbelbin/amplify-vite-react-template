@@ -7,15 +7,13 @@ import Button from 'react-bootstrap/Button';
 import Container from 'react-bootstrap/Container';
 import Form from 'react-bootstrap/Form';
 
-import { Link, useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 
 interface PageProperties {
   onUserLoggedIn: (userName: string) => void;
 }
 
 function UserLoginPage(props: PageProperties) {
-  const navigate = useNavigate();
-
   const [errorTitle, setErrorTitle] = useState('');
   const [errorMessage, setErrorMessage] = useState('');
   const [showError, setShowError] = useState(false);
