@@ -1,3 +1,7 @@
+import { IconButton, InputAdornment, TextField } from '@mui/material';
+
+import { VisibilityOff, RemoveRedEye } from '@mui/icons-material';
+
 import * as AWS_Auth from 'aws-amplify/auth';
 
 import { useState } from 'react';
@@ -46,6 +50,18 @@ function UserSignUpPage() {
     });
   };
 
+  const [ isUserPasswordVisible, setUserPasswordVisibility ] = useState(false);
+
+  const ViewSecretAdornment =(props: ViewSecretAdornmentProperties) => {
+    return (
+      <InputAdornment position="end">
+        <IconButton onClick={ () =>props.setVisibility(!props.visibility) } >
+          { props.visibility ? <VisibilityOff /> : <RemoveRedEye /> }
+        </IconButton>
+      </InputAdornment>
+    );
+  };
+
   return (
     <Container>
       <h1 className="mb-5" >Sign-Up</h1>
@@ -54,11 +70,12 @@ function UserSignUpPage() {
             className="d-flex align-items-start flex-column mb-3"
             controlId="formHorizontalEmail"
         >
-          <Form.Label>User Name</Form.Label>
-          <Form.Control
-            required
+          <TextField
+            fullWidth
+            label="User Name"
             onChange={(evt) => setUserName(evt.target.value)}
             placeholder="Enter E-mail"
+            required
             type="email"
           />
         </Form.Group>
@@ -66,12 +83,16 @@ function UserSignUpPage() {
             className="d-flex align-items-start flex-column mb-3"
             controlId="formHorizontalEmail"
         >
-          <Form.Label>Password</Form.Label>
-          <Form.Control
-            required
+          <TextField
+            fullWidth
+            InputProps={{
+              endAdornment: <ViewSecretAdornment visibility={isUserPasswordVisible} setVisibility={setUserPasswordVisibility} />
+            }}
+            label="Password"
             onChange={(evt) => setUserPassword(evt.target.value)}
             placeholder="Enter Password"
-            type="password"
+            required
+            type={ isUserPasswordVisible ? "text" : "password" }
           />
         </Form.Group>
         <br/><br/>

@@ -1,3 +1,5 @@
+import { TextField } from '@mui/material';
+
 import * as AWS_Auth from 'aws-amplify/auth';
 
 import { useState } from 'react';
@@ -49,11 +51,12 @@ function UserConfirmSignUpPage(props: PageProperties) {
           className="d-flex align-items-start flex-column mb-3"
           controlId="formHorizontalEmail"
         >
-          <Form.Label>User Name</Form.Label>
-          <Form.Control
-            required
+          <TextField
+            fullWidth
+            label="User Name"
             onChange={(evt) => setUserName(evt.target.value)}
             placeholder="Enter E-mail"
+            required
             type="email"
           />
         </Form.Group>
@@ -61,11 +64,12 @@ function UserConfirmSignUpPage(props: PageProperties) {
           className="d-flex align-items-start flex-column mb-3"
           controlId="formHorizontalText"
         >
-          <Form.Label>Confirmation Code</Form.Label>
-          <Form.Control
-            required
+          <TextField
+            fullWidth
+            label="Confirmation Code"
             onChange={(evt) => setConfirmationCode(evt.target.value)}
             placeholder="Enter Confirmation Code"
+            required
             type="text"
           />
         </Form.Group>
