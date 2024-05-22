@@ -13,6 +13,11 @@ import Form from 'react-bootstrap/Form';
 
 import { Link, useNavigate } from 'react-router-dom';
 
+interface ViewSecretAdornmentProperties {
+  visibility: boolean;
+  setVisibility: (visibility: boolean) => void;
+}
+
 function UserSignUpPage() {
   const navigate = useNavigate();
 
