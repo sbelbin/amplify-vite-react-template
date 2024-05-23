@@ -1,25 +1,27 @@
-## AWS Amplify React+Vite Starter Template
+# NeuroServo Horizon Cloud Application
 
-This repository provides a starter template for creating applications using React+Vite and AWS Amplify, emphasizing easy setup for authentication, API, and database capabilities.
+The NeuroServo Horizon cloud application.
 
 ## Overview
 
-This template equips you with a foundational React application integrated with AWS Amplify, streamlined for scalability and performance. It is ideal for developers looking to jumpstart their project with pre-configured AWS services like Cognito, AppSync, and DynamoDB.
+This cloud application was designed to compliment NeuroServo's VEEGix8 device and VEEGix8 iPad app with the goal
+being to to allow neurologists to access a recording session as the VEEGix8 device and VEEGix8 iPad app is
+recording a patient's EEG reading & video of the patient.
+
+This cloud application allows neurologists to remotely monitor patients by providing a _live-feed_ of patients'
+EEG readings and videos as it occurs.
+
+This is accomplished by the VEEGix8 iPad app continuously uploading the patient's EEG readings as well as
+streaming a video-feed to a cloud infrastructure.
+_The cloud infrastructure for this prototype & initial release(s) is provided by *Amazon's AWS services*._
+
+Additionally, this cloud application allows neurologists to review a recorded session afterwards.
 
 ## Features
 
-- **Authentication**: Setup with Amazon Cognito for secure user authentication.
-- **API**: Ready-to-use GraphQL endpoint with AWS AppSync.
-- **Database**: Real-time database powered by Amazon DynamoDB.
+Allows neurologists to:
 
-## Deploying to AWS
-
-For detailed instructions on deploying your application, refer to the [deployment section](https://docs.amplify.aws/react/start/quickstart/#deploy-a-fullstack-app-to-aws) of our documentation.
-
-## Security
-
-See [CONTRIBUTING](CONTRIBUTING.md#security-issue-notifications) for more information.
-
-## License
-
-This library is licensed under the MIT-0 License. See the LICENSE file.
+- Remotely monitor patients in which VEEGix8 iPad app is providing a _live-feed_ of that recording session.
+- Review previously recorded sessions. Those recorded sessions could be:
+  - A _live-feed_ that was previously recorded by the VEEGix8 iPad app that occurred at an earlier point-in-time.
+  - One that was recorded by the VEEGix8 iPad app onto the iPad device & then uploaded to the cloud infrastructure.

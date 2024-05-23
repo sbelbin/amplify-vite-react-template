@@ -1,311 +1,89 @@
-import { useEffect, useState } from 'react';
-import type { Schema } from "../amplify/data/resource";
-import { generateClient } from "aws-amplify/data";
+import './App.css';
+import 'bootstrap/dist/css/bootstrap.min.css';
 
-import {
-  Authenticator,
-  Button,
-  Heading,
-  Image,
-  Text,
-  View,
-  useAuthenticator,
-  useTheme
-} from '@aws-amplify/ui-react';
+import HomePage from './components/home/home_page';
+import UserConfirmSignUpPage from './components/users/confirm_sign_up_page';
+import UserLoginPage from './components/users/login_page';
+import UserLoggedOutPage from './components/users/logged_out_page';
+import UserSignUpPage from './components/users/sign_up_page';
+import SessionsSelectPage from './components/sessions/sessions_selection_page';
+import SiteNavigationBar from './components/site/navigation_bar';
+import SiteFooter from './components/site/footer';
 
-import '@aws-amplify/ui-react/styles.css'
+import { useState } from 'react';
 
-const client = generateClient<Schema>();
+import { Route, Routes, useNavigate } from 'react-router-dom';
 
 function App() {
-  const [todos, setTodos] = useState<Array<Schema["Todo"]["type"]>>([]);
+  const navigate = useNavigate();
 
-  useEffect(() => {
-    client.models.Todo.observeQuery().subscribe({
-      next: (data) => setTodos([...data.items]),
-    });
-  }, []);
+  const [userName, setUserName] = useState('');
 
-  function createTodo() {
-    client.models.Todo.create({ content: window.prompt("Todo content") });
+  function isUserLoggedIn(): boolean {
+    return !!userName;
   }
 
-  function deleteTodo(id: string) {
-    client.models.Todo.delete({ id });
+  //
+  // Application callback indicating when a user is logged into the application.
+  //
+  // \notes
+  //   The user name is the underlying unique identifier assigned to a person that is
+  //   stored in the user pool. In principal a user could login using an E-mail address
+  //   or a phone number. However, it's their user name that the application presents in
+  //   the site navigation bar.
+  //
+  function onUserLoggedIn(userName: string): void {
+    setUserName(userName);
+    navigate('/sessions/select');
   }
 
-  const components = {
-    Header() {
-      const { tokens } = useTheme();
-
-      return (
-        <View textAlign="center" padding={tokens.space.large}>
-          <Image
-            alt="NeuroServo logo"
-            height="40%"
-            width="40%"
-            src="/img/neuroservo.png"
-          />
-        </View>
-      );
-    },
-
-    Footer() {
-      const { tokens } = useTheme();
-
-      return (
-        <View textAlign="center" padding={tokens.space.large}>
-          <Text color={tokens.colors.white}>
-            &copy; All Rights Reserved
-          </Text>
-        </View>
-      );
-    },
-
-    SignIn: {
-      Header() {
-        const { tokens } = useTheme();
-
-        return (
-          <Heading
-            padding={`${tokens.space.xl} 0 0 ${tokens.space.xl}`}
-            level={3}
-          >
-            Sign in to your account
-          </Heading>
-        );
-      },
-      Footer() {
-        const { toForgotPassword } = useAuthenticator();
-
-        return (
-          <View textAlign="center">
-            <Button
-              fontWeight="normal"
-              onClick={toForgotPassword}
-              size="small"
-              variation="link"
-            >
-              Reset Password
-            </Button>
-          </View>
-        );
-      },
-    },
-
-    SignUp: {
-      Header() {
-        const { tokens } = useTheme();
-
-        return (
-          <Heading
-            padding={`${tokens.space.xl} 0 0 ${tokens.space.xl}`}
-            level={3}
-          >
-            Create a new account
-          </Heading>
-        );
-      },
-      Footer() {
-        const { toSignIn } = useAuthenticator();
-
-        return (
-          <View textAlign="center">
-            <Button
-              fontWeight="normal"
-              onClick={toSignIn}
-              size="small"
-              variation="link"
-            >
-              Back to Sign In
-            </Button>
-          </View>
-        );
-      },
-    },
-    ConfirmSignUp: {
-      Header() {
-        const { tokens } = useTheme();
-        return (
-          <Heading
-            padding={`${tokens.space.xl} 0 0 ${tokens.space.xl}`}
-            level={3}
-          >
-            Enter Information:
-          </Heading>
-        );
-      },
-      Footer() {
-        return <Text>Footer Information</Text>;
-      },
-    },
-    SetupTotp: {
-      Header() {
-        const { tokens } = useTheme();
-        return (
-          <Heading
-            padding={`${tokens.space.xl} 0 0 ${tokens.space.xl}`}
-            level={3}
-          >
-            Enter Information:
-          </Heading>
-        );
-      },
-      Footer() {
-        return <Text>Footer Information</Text>;
-      },
-    },
-    ConfirmSignIn: {
-      Header() {
-        const { tokens } = useTheme();
-        return (
-          <Heading
-            padding={`${tokens.space.xl} 0 0 ${tokens.space.xl}`}
-            level={3}
-          >
-            Enter Information:
-          </Heading>
-        );
-      },
-      Footer() {
-        return <Text>Footer Information</Text>;
-      },
-    },
-    ForgotPassword: {
-      Header() {
-        const { tokens } = useTheme();
-        return (
-          <Heading
-            padding={`${tokens.space.xl} 0 0 ${tokens.space.xl}`}
-            level={3}
-          >
-            Enter Information:
-          </Heading>
-        );
-      },
-      Footer() {
-        return <Text>Footer Information</Text>;
-      },
-    },
-    ConfirmResetPassword: {
-      Header() {
-        const { tokens } = useTheme();
-        return (
-          <Heading
-            padding={`${tokens.space.xl} 0 0 ${tokens.space.xl}`}
-            level={3}
-          >
-            Enter Information:
-          </Heading>
-        );
-      },
-      Footer() {
-        return <Text>Footer Information</Text>;
-      },
-    },
-  };
-
-  const formFields = {
-    signIn: {
-      username: {
-        label: 'E-mail:',
-        placeholder: 'Enter your e-mail',
-        isRequired: true
-      },
-      password: {
-        label: 'Password:',
-        placeholder: 'Enter your password',
-        isRequired: true
-      }
-    },
-    signUp: {
-      email: {
-        label: 'E-mail:',
-        placeholder: 'Enter your e-mail',
-        order: 1
-      },
-      password: {
-        label: 'Password:',
-        placeholder: 'Enter your password',
-        isRequired: false,
-        order: 2
-      },
-      confirm_password: {
-        label: 'Password (confirmation):',
-        placeholder: 'Confirm your password',
-        order: 3
-      },
-    },
-    forceNewPassword: {
-      password: {
-        label: 'Password:',
-        placeholder: 'Enter your password',
-      },
-    },
-    forgotPassword: {
-      username: {
-        label: 'E-mail:',
-        placeholder: 'Enter your e-mail',
-      },
-    },
-    confirmResetPassword: {
-      confirmation_code: {
-        label: 'Confirmation Code:',
-        placeholder: 'Enter the confirmation code',
-        isRequired: false
-      },
-      confirm_password: {
-        label: 'Password (confirmation):',
-        placeholder: 'Confirm your password',
-      },
-    },
-    setupTotp: {
-      QR: {
-        totpIssuer: 'test issuer',
-        totpUsername: 'amplify_qr_test_user',
-      },
-      confirmation_code: {
-        label: 'Confirmation Code:',
-        placeholder: 'Enter the confirmation code',
-        isRequired: false
-      },
-    },
-    confirmSignIn: {
-      confirmation_code: {
-        label: 'Confirmation Code:',
-        placeholder: 'Enter the confirmation code',
-        isRequired: false
-      },
-    },
-  };
+  //
+  // Application callback indicating when the user has logged out from the application.
+  //
+  function onUserLoggedOut(): void {
+    setUserName('');
+    navigate('/users/logged_out');
+  }
 
   return (
-    <Authenticator components={components}
-                   formFields={formFields}
-                   socialProviders={['google']}>
-      {({ signOut, user }) => (
-        <main>
-          <h1>{user?.signInDetails?.loginId}'s todos</h1>
-          <button onClick={createTodo}>+ new</button>
-          <ul>
-            {todos.map((todo) => (
-              <li
-                onClick={() => deleteTodo(todo.id)}
-                key={todo.id}>
-                {todo.content}</li>
-            ))}
-          </ul>
-          <div>
-            🥳 App successfully hosted. Try creating a new todo.
-            <br />
-            <a href="https://next-release-dev.d1ywzrxfkb9wgg.amplifyapp.com/react/start/quickstart/vite-react-app/#step-2-add-delete-to-do-functionality">
-              Review next step of this tutorial.
-            </a>
-          </div>
-          <button onClick={signOut}>Sign out</button>
-        </main>
-      )}
-    </Authenticator>
+    <div>
+      <SiteNavigationBar
+        userName={userName}
+        isUserLoggedIn={isUserLoggedIn}
+        onUserLoggedOut={onUserLoggedOut}
+      />
+      <Routes>
+        <Route
+          path="*"
+          element={<HomePage isUserLoggedIn={isUserLoggedIn} />}
+        />
+        <Route
+          path="/"
+          element={<HomePage isUserLoggedIn={isUserLoggedIn} />}
+        />
+        <Route
+          path="/users/login"
+          element={<UserLoginPage onUserLoggedIn={onUserLoggedIn} />}
+        />
+        <Route
+          path="/users/logged_out"
+          element={<UserLoggedOutPage />}
+        />
+        <Route
+          path="/users/sign_up"
+          element={<UserSignUpPage />}
+        />
+        <Route
+          path="/users/confirm_sign_up"
+          element={<UserConfirmSignUpPage onUserLoggedIn={onUserLoggedIn} />}
+        />
+        <Route
+          path="/sessions/select"
+          element={<SessionsSelectPage isUserLoggedIn={isUserLoggedIn} />}
+        />
+      </Routes>
+      <SiteFooter />
+    </div>
   );
 }
 
