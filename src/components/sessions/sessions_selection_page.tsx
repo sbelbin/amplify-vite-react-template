@@ -31,7 +31,8 @@ import {
   Button,
   Col,
   Container,
-  Row
+  Row,
+  Stack
 } from 'react-bootstrap';
 
 interface PageProperties {
@@ -69,15 +70,15 @@ interface Recording
 function SessionsSelectPage(props: PageProperties) {
   const navigate = useNavigate();
 
-  // useEffect(() => {{
-  //   !props.isUserLoggedIn() && navigate('/');
-  // }}, []);
+  useEffect(() => {{
+    !props.isUserLoggedIn() && navigate('/');
+  }}, []);
 
   const gridRef = useRef<AgGridReact<Recording>>(null);
 
   const [selectedRecording, setSelectedRecording] = useState<Recording>();
 
-  const onOpenRecording = (recording: Recording | undefined) : void => {
+  const onOpenRecording = (recording: Recording | undefined) => {
     if (!recording) {
       return;
     }
@@ -85,23 +86,22 @@ function SessionsSelectPage(props: PageProperties) {
     window.alert(`Selected recording is ${JSON.stringify(recording)}`);
   };
 
-  const liveFeedCellRenderer = (params: CustomCellRendererProps<Recording, boolean>) => (
-    <span
-      className="imgSpanLiveFeed"
-    >
-      {
-        params.value && (
-          <img
-            className="live-feed-icon"
-            src="/img/live.png"
-            height={40}
-          />
-        )
-      }
-    </span>
+  const finishTimestampCellRenderer = (params: CustomCellRendererProps<Recording, Date>) => (
+    params.value?.toLocaleString('sv-SE') ?? (
+      <span
+        className="imgSpanLiveFeed"
+      >
+        <img
+          className="live-feed-icon"
+          src="/img/live-feed.png"
+          height={40}
+          width="auto"
+        />
+      </span>
+    )
   );
 
-  const [rowData] = useState<Recording[]>([
+  const [recordings] = useState<Recording[]>([
     { instituteId: 'neuroservo', patientId: 'sbelbin', sessionId: '2024-05-07T12:25:43Z', startTimestamp: new Date(Date.parse('2024-05-07T12:23:36Z')), finishTimestamp: new Date(Date.parse('2024-05-07T12:25:43Z')), localTimeZone: 'America/Toronto', isLiveFeed: false },
     { instituteId: 'neuroservo', patientId: 'sbelbin', sessionId: '2024-05-08T12:25:43Z', startTimestamp: new Date(Date.parse('2024-05-08T12:23:36Z')), finishTimestamp: new Date(Date.parse('2024-05-08T12:25:43Z')), localTimeZone: 'America/Toronto', isLiveFeed: false },
     { instituteId: 'neuroservo', patientId: 'sbelbin', sessionId: '2024-05-09T12:25:43Z', startTimestamp: new Date(Date.parse('2024-05-09T12:23:36Z')), finishTimestamp: new Date(Date.parse('2024-05-09T12:25:43Z')), localTimeZone: 'America/Toronto', isLiveFeed: false },
@@ -146,13 +146,6 @@ function SessionsSelectPage(props: PageProperties) {
       headerName: 'Patient ID'
     },
     {
-      cellClass: 'live-feed-cell',
-      cellDataType: 'boolean',
-      cellRenderer: liveFeedCellRenderer,
-      field: 'isLiveFeed',
-      headerName: 'Live-Feed'
-    },
-    {
       cellDataType: 'date',
       field: 'startTimestamp',
       filter: 'agDateColumnFilter',
@@ -162,7 +155,15 @@ function SessionsSelectPage(props: PageProperties) {
       cellDataType: 'date',
       field: 'finishTimestamp',
       filter: 'agDateColumnFilter',
-      headerName: 'Finishing Time'
+      headerName: 'Finishing Time',
+      cellRenderer: finishTimestampCellRenderer,
+      comparator: (valueA: Date | undefined, valueB: Date | undefined) => {
+        return (!valueA)           ? 1
+             : (!valueB)           ? -1
+             : (valueA === valueB) ? 0
+             : (valueA > valueB)   ? 1
+             : -1;
+      }
     }
   ]);
 
@@ -205,7 +206,7 @@ function SessionsSelectPage(props: PageProperties) {
       return {
         sort: {
           sortModel: [
-            { colId: 'isLiveFeed',      sort: 'desc' },
+            { colId: 'finishTimestamp', sort: 'desc' },
             { colId: 'startTimestamp',  sort: 'desc' },
             { colId: 'instituteId',     sort: 'asc' },
             { colId: 'patientId',       sort: 'asc' }
@@ -248,26 +249,53 @@ function SessionsSelectPage(props: PageProperties) {
           setSelectedRecording(event.api.getSelectedNodes()?.at(0)?.data),
     [setSelectedRecording]);
 
+  const onRefreshRecordings = () => {
+    const now = new Date();
+
+    for(let index = 0; index < 5; ++index) {
+      const finishTimestamp = new Date(now.getTime() + (index * 3600000));
+      const startTimestamp = new Date(finishTimestamp.getTime() - 3600000);
+      const sessionId = startTimestamp.toISOString();
+
+      recordings.push(
+        { instituteId: 'neuroservo', patientId: 'sbelbin', sessionId: sessionId, startTimestamp: startTimestamp, finishTimestamp: undefined, localTimeZone: 'America/Toronto', isLiveFeed: true },
+      );
+    };
+
+    window.alert('Refreshing the recording sessions.');
+
+    gridRef.current!.api.setGridOption('rowData', recordings);
+  };
+
   return (
     <Container>
-      <Row>
-        <Col md={{ span: 1, offset: 0 }} >
-          <Button className="ml-auto"
-            onClick={() => onOpenRecording(selectedRecording)}
-            disabled={!selectedRecording}
-          >
-            Open
-          </Button>
-        </Col>
-      </Row>
-      <Row>
-        <Col
+      <Stack>
+        <Row>
+          <Col md={{ span: 1, offset: 0 }} >
+            <Button
+              onClick={() => onOpenRecording(selectedRecording)}
+              disabled={!selectedRecording}
+            >
+              Open
+            </Button>
+          </Col>
+          <Col md={{ span: 0, offset: 9 }} >
+            <Button
+              onClick={() => onRefreshRecordings()}
+            >
+              Refresh
+            </Button>
+          </Col>
+        </Row>
+        <div className="vr" />
+        <div
           className="ag-theme-quartz-dark"
           style={{
             height: 500,
-            width: 1050
+            width: 850,
+            // fontFamily: "monospace",
+            // fontSize: 14
           }}
-          md={{ span: 9, offset: 0 }}
         >
           <AgGridReact<Recording>
             initialState={gridInitialState}
@@ -282,14 +310,13 @@ function SessionsSelectPage(props: PageProperties) {
             paginationPageSize={paginationPageSize}
             paginationPageSizeSelector={paginationPageSizeSelector}
             ref={gridRef}
-            rowData={rowData}
-            rowHeight={40}
+            rowData={recordings}
             rowSelection={'single'}
             suppressCellFocus={true}
             suppressRowClickSelection={false}
           />
-        </Col>
-      </Row>
+        </div>
+      </Stack>
     </Container>
   );
 }
