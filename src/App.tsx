@@ -13,6 +13,7 @@ import SiteFooter from './components/site/footer';
 import { useState } from 'react';
 
 import { Route, Routes, useNavigate } from 'react-router-dom';
+import { Container, Row } from 'react-bootstrap';
 
 function App() {
   const navigate = useNavigate();
@@ -46,44 +47,50 @@ function App() {
   }
 
   return (
-    <div>
+    <Container fluid>
+      <Row>
       <SiteNavigationBar
         userName={userName}
         isUserLoggedIn={isUserLoggedIn}
         onUserLoggedOut={onUserLoggedOut}
       />
-      <Routes>
-        <Route
-          path="*"
-          element={<HomePage isUserLoggedIn={isUserLoggedIn} />}
-        />
-        <Route
-          path="/"
-          element={<HomePage isUserLoggedIn={isUserLoggedIn} />}
-        />
-        <Route
-          path="/users/login"
-          element={<UserLoginPage onUserLoggedIn={onUserLoggedIn} />}
-        />
-        <Route
-          path="/users/logged_out"
-          element={<UserLoggedOutPage />}
-        />
-        <Route
-          path="/users/sign_up"
-          element={<UserSignUpPage />}
-        />
-        <Route
-          path="/users/confirm_sign_up"
-          element={<UserConfirmSignUpPage onUserLoggedIn={onUserLoggedIn} />}
-        />
-        <Route
-          path="/sessions/select"
-          element={<SessionsSelectPage isUserLoggedIn={isUserLoggedIn} />}
-        />
-      </Routes>
-      <SiteFooter />
-    </div>
+      </Row>
+      <Row>
+        <Routes>
+          <Route
+            path="*"
+            element={<HomePage isUserLoggedIn={isUserLoggedIn} />}
+          />
+          <Route
+            path="/"
+            element={<HomePage isUserLoggedIn={isUserLoggedIn} />}
+          />
+          <Route
+            path="/users/login"
+            element={<UserLoginPage onUserLoggedIn={onUserLoggedIn} />}
+          />
+          <Route
+            path="/users/logged_out"
+            element={<UserLoggedOutPage />}
+          />
+          <Route
+            path="/users/sign_up"
+            element={<UserSignUpPage />}
+          />
+          <Route
+            path="/users/confirm_sign_up"
+            element={<UserConfirmSignUpPage onUserLoggedIn={onUserLoggedIn} />}
+          />
+          <Route
+            path="/sessions/select"
+            element={<SessionsSelectPage isUserLoggedIn={isUserLoggedIn} />}
+          />
+        </Routes>
+      </Row>
+      <Row>
+        <SiteFooter />
+      </Row>
+    </Container>
   );
 }
 
