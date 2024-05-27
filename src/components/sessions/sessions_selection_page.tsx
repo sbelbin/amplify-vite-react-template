@@ -157,11 +157,11 @@ function SessionsSelectPage(props: PageProperties) {
       filter: 'agDateColumnFilter',
       headerName: 'Finishing Time',
       cellRenderer: finishTimestampCellRenderer,
-      comparator: (valueA: Date | undefined, valueB: Date | undefined) => {
-        return (!valueA)           ? 1
-             : (!valueB)           ? -1
-             : (valueA === valueB) ? 0
-             : (valueA > valueB)   ? 1
+      comparator: (lhs: Date | undefined, rhs: Date | undefined) => {
+        return (!lhs)        ? 1
+             : (!rhs)        ? -1
+             : (lhs === rhs) ? 0
+             : (lhs > rhs)   ? 1
              : -1;
       }
     }
@@ -174,7 +174,7 @@ function SessionsSelectPage(props: PageProperties) {
         cellClass: 'ag-left-aligned-cell',
         editable: false,
         filter: true,
-        floatingFilter: true,
+        floatingFilter: true
       };
     },
     []);
@@ -218,7 +218,11 @@ function SessionsSelectPage(props: PageProperties) {
 
   const pagination = true;
   const paginationPageSize = 25;
-  const paginationPageSizeSelector = [paginationPageSize, paginationPageSize * 2, paginationPageSize * 4];
+  const paginationPageSizeSelector = [
+    paginationPageSize,
+    paginationPageSize * 2,
+    paginationPageSize * 4
+  ];
 
   const navigateToNextCell = (params : NavigateToNextCellParams<Recording>) => {
     const suggestedNextCell = params.nextCellPosition;
@@ -293,8 +297,6 @@ function SessionsSelectPage(props: PageProperties) {
           style={{
             height: 500,
             width: 850,
-            // fontFamily: "monospace",
-            // fontSize: 14
           }}
         >
           <AgGridReact<Recording>
