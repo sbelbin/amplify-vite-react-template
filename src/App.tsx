@@ -1,4 +1,6 @@
 import './App.css';
+import { authenticatedUserLoginId } from './authentication/user';
+
 import 'bootstrap/dist/css/bootstrap.min.css';
 
 import HomePage from './components/home/home_page';
@@ -10,7 +12,7 @@ import SessionsSelectPage from './components/sessions/sessions_selection_page';
 import SiteNavigationBar from './components/site/navigation_bar';
 import SiteFooter from './components/site/footer';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 
 import { Route, Routes, useNavigate } from 'react-router-dom';
 import { Container, Row } from 'react-bootstrap';
@@ -19,6 +21,15 @@ function App() {
   const navigate = useNavigate();
 
   const [userName, setUserName] = useState('');
+
+  useEffect(() => {
+      const setLoginId = async () => {
+        setUserName(await authenticatedUserLoginId() ?? '');
+      };
+
+      setLoginId();
+    },
+    [setUserName]);
 
   function isUserLoggedIn(): boolean {
     return !!userName;
