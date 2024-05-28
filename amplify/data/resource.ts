@@ -27,9 +27,9 @@ const schema = a.schema({
     })
     .identifier(["instituteId", "patientId", "sessionId"])
     .authorization((allow) => [
-      allow.authenticated(),
+      allow.authenticated('userPools'),
       allow.publicApiKey(),
-      allow.authenticated('identityPool')
+      allow.authenticated()
     ])
 });
 
@@ -38,8 +38,8 @@ export type Schema = ClientSchema<typeof schema>;
 export const data = defineData({
   schema,
   authorizationModes: {
-    // defaultAuthorizationMode: 'identityPool'
-    defaultAuthorizationMode: 'apiKey',
-    apiKeyAuthorizationMode: { expiresInDays: 30 }
+    defaultAuthorizationMode: 'userPool'
+    // defaultAuthorizationMode: 'apiKey',
+    // apiKeyAuthorizationMode: { expiresInDays: 30 }
   }
 });

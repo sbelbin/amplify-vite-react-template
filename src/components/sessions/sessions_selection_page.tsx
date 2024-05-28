@@ -1,4 +1,7 @@
-import { authenticatedUserLoginId } from '../../authentication/user';
+import {
+  authenticatedUserLoginId,
+  authenticatedUserAccessToken
+ } from '../../authentication/user';
 
 import type { Schema } from '../../../amplify/data/resource';
 
@@ -118,8 +121,6 @@ function SessionsSelectPage(props: PageProperties) {
     !props.isUserLoggedIn() && navigate('/');
   }}, []);
 
-  const client = generateClient<Schema>();
-
   const gridRef = useRef<AgGridReact<Recording>>(null);
 
   const [selectedRecording, setSelectedRecording] = useState<Recording>();
@@ -154,6 +155,12 @@ function SessionsSelectPage(props: PageProperties) {
   const [recordings, setRecordings] = useState<Recording[]>([]);
 
   const fetchRecordings = async () => {
+    const loginId = await authenticatedUserLoginId();
+    const accessToken = await authenticatedUserAccessToken();
+    console.debug(`The user login details. username: ${loginId}, access_token: ${accessToken}`);
+
+    const client = generateClient<Schema>();
+
     // const now = new Date(Date.now());
 
     // const { errors, data: item } = await client.models.recordings.create({
@@ -189,26 +196,24 @@ function SessionsSelectPage(props: PageProperties) {
     // setRecordings(recordings);
     // gridRef.current!.api.setGridOption('rowData', recordings);
 
-    const loginId = await authenticatedUserLoginId();
-    console.debug(`The logged in user is... ${loginId}`);
-
-    client.models.recordings.list({authMode: 'apiKey'})
+    client.models.recordings.list()
     .then((result) => {
 
       if (result.errors) {
-        console.error(`Failed to fetch the recording sessions from the table. Reason(s): ${result.errors}`);
+        const error_messages = result.errors.map((error) => error.message);
+        console.error(`Failed to fetch the recording sessions from the table. Reason(s): ${error_messages.join(', ')}`);
         return;
       }
 
       const recordings: Recording[] = result.data.map((recording) => ({
-        instituteId: recording.instituteId,
-        sessionId: recording.sessionId,
-        patientId: recording.patientId,
-        startTimestamp: new Date(Date.parse(recording.startTimestamp)),
-        finishTimestamp: (recording.finishTimestamp !== null && recording.finishTimestamp !== undefined) ? new Date(Date.parse(recording.startTimestamp)) : undefined,
-        localTimeZone: recording.localTimeZone,
-        isLiveFeed: (recording.finishTimestamp === null || recording.finishTimestamp === undefined),
-      }));
+              instituteId: recording.instituteId,
+              sessionId: recording.sessionId,
+              patientId: recording.patientId,
+              startTimestamp: new Date(Date.parse(recording.startTimestamp)),
+              finishTimestamp: (recording.finishTimestamp !== null && recording.finishTimestamp !== undefined) ? new Date(Date.parse(recording.startTimestamp)) : undefined,
+              localTimeZone: recording.localTimeZone,
+              isLiveFeed: (recording.finishTimestamp === null || recording.finishTimestamp === undefined),
+            }));
 
       setRecordings(recordings);
       gridRef.current!.api.setGridOption('rowData', recordings);
