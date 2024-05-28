@@ -1,3 +1,5 @@
+import { authenticatedUserLoginId } from '../../authentication/user';
+
 import type { Schema } from '../../../amplify/data/resource';
 
 import {
@@ -152,65 +154,68 @@ function SessionsSelectPage(props: PageProperties) {
   const [recordings, setRecordings] = useState<Recording[]>([]);
 
   const fetchRecordings = async () => {
-    const now = new Date(Date.now());
+    // const now = new Date(Date.now());
 
-    const { errors, data: item } = await client.models.recordings.create({
-      instituteId: 'neuroservo',
-      sessionId: now.toISOString(),
-      patientId: 'sbelbin',
-      startTimestamp: now.toISOString(),
-      localTimeZone: 'America/Toronto'
-    });
-
-    if (errors) {
-      console.error(`Failed to add an item to the recording sessions table. Reason(s): ${errors}`);
-      return;
-    }
-
-    if (!item) {
-      console.error('Failed to add an item to the recording sessions table.');
-      return;
-    }
-
-    const recording: Recording = {
-      instituteId: item!.instituteId,
-      sessionId: item!.sessionId,
-      patientId: item!.patientId,
-      startTimestamp: new Date(Date.parse(item!.startTimestamp)),
-      finishTimestamp: (item!.finishTimestamp !== null && item!.finishTimestamp !== undefined) ? new Date(Date.parse(item!.startTimestamp)) : undefined,
-      localTimeZone: item!.localTimeZone,
-      isLiveFeed: (item!.finishTimestamp === null || item!.finishTimestamp === undefined),
-    };
-
-    recordings.push(recording);
-
-    setRecordings(recordings);
-    gridRef.current!.api.setGridOption('rowData', recordings);
-
-    // client.models.recordings.list()
-    // .then((result) => {
-
-    //   if (result.errors) {
-    //     console.error(`Failed to fetch the recording sessions from the table. Reason(s): ${result.errors}`);
-    //     return;
-    //   }
-
-    //   const recordings: Recording[] = result.data.map((recording) => ({
-    //     instituteId: recording.instituteId,
-    //     sessionId: recording.sessionId,
-    //     patientId: recording.patientId,
-    //     startTimestamp: new Date(Date.parse(recording.startTimestamp)),
-    //     finishTimestamp: (recording.finishTimestamp !== null && recording.finishTimestamp !== undefined) ? new Date(Date.parse(recording.startTimestamp)) : undefined,
-    //     localTimeZone: recording.localTimeZone,
-    //     isLiveFeed: (recording.finishTimestamp === null || recording.finishTimestamp === undefined),
-    //   }));
-
-    //   setRecordings(recordings);
-    //   gridRef.current!.api.setGridOption('rowData', recordings);
-    // })
-    // .catch((error) => {
-    //   console.error(`Failed to fetch the recording sessions from the table. Reason(s): ${error}`);
+    // const { errors, data: item } = await client.models.recordings.create({
+    //   instituteId: 'neuroservo',
+    //   sessionId: now.toISOString(),
+    //   patientId: 'sbelbin',
+    //   startTimestamp: now.toISOString(),
+    //   localTimeZone: 'America/Toronto'
     // });
+
+    // if (errors) {
+    //   console.error(`Failed to add an item to the recording sessions table. Reason(s): ${errors}`);
+    //   return;
+    // }
+
+    // if (!item) {
+    //   console.error('Failed to add an item to the recording sessions table.');
+    //   return;
+    // }
+
+    // const recording: Recording = {
+    //   instituteId: item!.instituteId,
+    //   sessionId: item!.sessionId,
+    //   patientId: item!.patientId,
+    //   startTimestamp: new Date(Date.parse(item!.startTimestamp)),
+    //   finishTimestamp: (item!.finishTimestamp !== null && item!.finishTimestamp !== undefined) ? new Date(Date.parse(item!.startTimestamp)) : undefined,
+    //   localTimeZone: item!.localTimeZone,
+    //   isLiveFeed: (item!.finishTimestamp === null || item!.finishTimestamp === undefined),
+    // };
+
+    // recordings.push(recording);
+
+    // setRecordings(recordings);
+    // gridRef.current!.api.setGridOption('rowData', recordings);
+
+    const loginId = await authenticatedUserLoginId();
+    console.debug(`The logged in user is... ${loginId}`);
+
+    client.models.recordings.list({authMode: 'apiKey'})
+    .then((result) => {
+
+      if (result.errors) {
+        console.error(`Failed to fetch the recording sessions from the table. Reason(s): ${result.errors}`);
+        return;
+      }
+
+      const recordings: Recording[] = result.data.map((recording) => ({
+        instituteId: recording.instituteId,
+        sessionId: recording.sessionId,
+        patientId: recording.patientId,
+        startTimestamp: new Date(Date.parse(recording.startTimestamp)),
+        finishTimestamp: (recording.finishTimestamp !== null && recording.finishTimestamp !== undefined) ? new Date(Date.parse(recording.startTimestamp)) : undefined,
+        localTimeZone: recording.localTimeZone,
+        isLiveFeed: (recording.finishTimestamp === null || recording.finishTimestamp === undefined),
+      }));
+
+      setRecordings(recordings);
+      gridRef.current!.api.setGridOption('rowData', recordings);
+    })
+    .catch((error) => {
+      console.error(`Failed to fetch the recording sessions from the table. Reason(s): ${error}`);
+    });
   };
 
   useEffect(() => {
