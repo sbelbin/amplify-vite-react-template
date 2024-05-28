@@ -1,8 +1,3 @@
-import {
-  authenticatedUserLoginId,
-  authenticatedUserAccessToken
- } from '../../authentication/user';
-
 import type { Schema } from '../../../amplify/data/resource';
 
 import {
@@ -66,6 +61,7 @@ interface Video
 
 interface Recording
 {
+  id: string;
   instituteId: string;
   patientId: string;
   sessionId: string;
@@ -117,9 +113,7 @@ function formatDuration(from: Date, until: Date | undefined | null): string {
 function SessionsSelectPage(props: PageProperties) {
   const navigate = useNavigate();
 
-  useEffect(() => {{
-    !props.isUserLoggedIn() && navigate('/');
-  }}, []);
+  useEffect(() => { !props.isUserLoggedIn() && navigate('/'); }, []);
 
   const gridRef = useRef<AgGridReact<Recording>>(null);
 
@@ -155,78 +149,32 @@ function SessionsSelectPage(props: PageProperties) {
   const [recordings, setRecordings] = useState<Recording[]>([]);
 
   const fetchRecordings = async () => {
-    const loginId = await authenticatedUserLoginId();
-    const accessToken = await authenticatedUserAccessToken();
-    console.debug(`The user login details. username: ${loginId}, access_token: ${accessToken}`);
-
     const client = generateClient<Schema>();
-
-    // const now = new Date(Date.now());
-
-    // const { errors, data: item } = await client.models.recordings.create({
-    //   instituteId: 'neuroservo',
-    //   sessionId: now.toISOString(),
-    //   patientId: 'sbelbin',
-    //   startTimestamp: now.toISOString(),
-    //   localTimeZone: 'America/Toronto'
-    // });
-
-    // if (errors) {
-    //   console.error(`Failed to add an item to the recording sessions table. Reason(s): ${errors}`);
-    //   return;
-    // }
-
-    // if (!item) {
-    //   console.error('Failed to add an item to the recording sessions table.');
-    //   return;
-    // }
-
-    // const recording: Recording = {
-    //   instituteId: item!.instituteId,
-    //   sessionId: item!.sessionId,
-    //   patientId: item!.patientId,
-    //   startTimestamp: new Date(Date.parse(item!.startTimestamp)),
-    //   finishTimestamp: (item!.finishTimestamp !== null && item!.finishTimestamp !== undefined) ? new Date(Date.parse(item!.startTimestamp)) : undefined,
-    //   localTimeZone: item!.localTimeZone,
-    //   isLiveFeed: (item!.finishTimestamp === null || item!.finishTimestamp === undefined),
-    // };
-
-    // recordings.push(recording);
-
-    // setRecordings(recordings);
-    // gridRef.current!.api.setGridOption('rowData', recordings);
 
     client.models.recordings.list()
     .then((result) => {
-
       if (result.errors) {
-        const error_messages = result.errors.map((error) => error.message);
-        console.error(`Failed to fetch the recording sessions from the table. Reason(s): ${error_messages.join(', ')}`);
-        return;
+        throw new Error(result.errors.map((error) => error.message).join(', '));
       }
 
-      const recordings: Recording[] = result.data.map((recording) => ({
-              instituteId: recording.instituteId,
-              sessionId: recording.sessionId,
-              patientId: recording.patientId,
-              startTimestamp: new Date(Date.parse(recording.startTimestamp)),
-              finishTimestamp: (recording.finishTimestamp !== null && recording.finishTimestamp !== undefined) ? new Date(Date.parse(recording.startTimestamp)) : undefined,
-              localTimeZone: recording.localTimeZone,
-              isLiveFeed: (recording.finishTimestamp === null || recording.finishTimestamp === undefined),
-            }));
-
-      setRecordings(recordings);
-      gridRef.current!.api.setGridOption('rowData', recordings);
+      setRecordings(result.data.map((recording) => ({
+        id: recording.id,
+        instituteId: recording.instituteId,
+        sessionId: recording.sessionId,
+        patientId: recording.patientId,
+        startTimestamp: new Date(Date.parse(recording.startTimestamp)),
+        finishTimestamp: (recording.finishTimestamp !== null && recording.finishTimestamp !== undefined) ? new Date(Date.parse(recording.startTimestamp)) : undefined,
+        localTimeZone: recording.localTimeZone,
+        isLiveFeed: (recording.finishTimestamp === null || recording.finishTimestamp === undefined),
+      })));
     })
     .catch((error) => {
+      setRecordings([]);
       console.error(`Failed to fetch the recording sessions from the table. Reason(s): ${error}`);
     });
   };
 
-  useEffect(() => {
-      fetchRecordings();
-    },
-    []);
+  useEffect(() => { fetchRecordings() }, []);
 
   const [colDefs] = useState<ColDef[]>([
     {
@@ -354,10 +302,6 @@ function SessionsSelectPage(props: PageProperties) {
           setSelectedRecording(event.api.getSelectedNodes()?.at(0)?.data),
     [setSelectedRecording]);
 
-  const onRefreshRecordings = () => {
-    fetchRecordings();
-  };
-
   return (
     <Container>
       <Stack>
@@ -372,7 +316,7 @@ function SessionsSelectPage(props: PageProperties) {
           </Col>
           <Col md={{ span: 0, offset: 9 }} >
             <Button
-              onClick={() => onRefreshRecordings()}
+              onClick={ fetchRecordings }
             >
               Refresh
             </Button>
