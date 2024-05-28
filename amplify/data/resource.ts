@@ -25,7 +25,6 @@ const schema = a.schema({
         streamSessionId: a.string()
       })
     })
-    .identifier(["instituteId", "patientId", "sessionId"])
     .authorization((allow) => [
       allow.authenticated('identityPool'),
       // allow.publicApiKey(),
@@ -39,7 +38,5 @@ export const data = defineData({
   schema,
   authorizationModes: {
     defaultAuthorizationMode: 'identityPool'
-    // defaultAuthorizationMode: 'apiKey',
-    // apiKeyAuthorizationMode: { expiresInDays: 30 }
   }
 });
