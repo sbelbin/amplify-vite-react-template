@@ -28,7 +28,7 @@ const schema = a.schema({
     .identifier(["instituteId", "patientId", "sessionId"])
     .authorization((allow) => [
       allow.authenticated('userPools'),
-      allow.publicApiKey(),
+      // allow.publicApiKey(),
       allow.authenticated()
     ])
 });
