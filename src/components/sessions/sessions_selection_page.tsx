@@ -3,13 +3,8 @@ import Recording from '../../models/recordings/recording';
 
 import dateOrNow from '../../utilities/date_time/date_or_now';
 import formatDuration from '../../utilities/date_time/format_duration';
-import formatTimestamp from '../../utilities/date_time/format_timestamp';
+import { formatOptionalTimestamp, formatTimestamp } from '../../utilities/date_time/format_timestamp';
 import hasValue from '../../utilities/optional/has_value';
-
-import {
-  AgGridReact,
-  CustomCellRendererProps
-} from 'ag-grid-react';
 
 import {
   ColDef,
@@ -25,6 +20,11 @@ import {
 
 import 'ag-grid-community/styles/ag-grid.css';
 import 'ag-grid-community/styles/ag-theme-quartz.css';
+
+import {
+  AgGridReact,
+  CustomCellRendererProps
+} from 'ag-grid-react';
 
 import {
   useCallback,
@@ -45,6 +45,7 @@ import {
   Toast,
   ToastContainer
 } from 'react-bootstrap';
+import { parseOptionalDate } from '../../utilities/date_time/parse_date';
 
 interface PageProperties {
   isUserLoggedIn: () => boolean;
@@ -58,27 +59,29 @@ function SessionsSelectPage(props: PageProperties) {
 
   const navigate = useNavigate();
 
-  useEffect(() => { !props.isUserLoggedIn() && navigate('/'); }, []);
+  useEffect(() => {
+      !props.isUserLoggedIn() && navigate('/');
+    },
+    [navigate, props]);
 
   const gridRef = useRef<AgGridReact<Recording>>(null);
 
   const [selectedRow, setSelectedRow] = useState<Recording>();
 
-  const onOpenRecording = (recording: Recording | undefined) => {
-    if (!recording) {
-      return;
-    }
+  const onOpenRecording = useCallback((recording: Recording | undefined) => {
+      if (!recording) {
+        return;
+      }
 
-    window.alert(`Selected recording is ${JSON.stringify(recording)}`);
-  };
+      window.alert(`Selected recording is ${JSON.stringify(recording)}`);
+    },
+    []);
 
   const finishTimestampCellRenderer = (params: CustomCellRendererProps<Recording, Date>) => (
     hasValue(params.value)
     ? formatTimestamp(params.value!)
     : (
-        <span
-          className="imgSpanLiveFeed"
-        >
+        <span className="imgSpanLiveFeed" >
           <img
             className="live-feed-icon"
             src="/img/live-feed.png"
@@ -89,7 +92,7 @@ function SessionsSelectPage(props: PageProperties) {
       )
   );
 
-  const durationCellRenderer = (params: CustomCellRendererProps<Recording, Number>) => (
+  const durationCellRenderer = (params: CustomCellRendererProps<Recording, number>) => (
     hasValue(params.node.data?.startTimestamp) &&
     formatDuration(params.node.data!.startTimestamp,
                    dateOrNow(params.node.data!.finishTimestamp))
@@ -172,10 +175,10 @@ function SessionsSelectPage(props: PageProperties) {
           extendsDataType: 'date',
 
           valueParser: (params: ValueParserLiteParams<Recording, Date>) =>
-            (params.newValue) ? new Date(Date.parse(params.newValue)) : null,
+            parseOptionalDate(params.newValue) ?? null,
 
           valueFormatter: (params: ValueFormatterLiteParams<Recording, Date>) =>
-            params.value ? formatTimestamp(params.value) : ''
+            formatOptionalTimestamp(params.value) ?? ''
         }
       };
     },
@@ -245,7 +248,7 @@ function SessionsSelectPage(props: PageProperties) {
           <Col md={{ span: 1, offset: 0 }} >
             <Button
               onClick={() => onOpenRecording(selectedRow)}
-              disabled={!selectedRow}
+              disabled={!hasValue(selectedRow)}
             >
               Open
             </Button>
