@@ -1,3 +1,11 @@
+import fetchRecordings from '../../models/recordings/fetch_recordings';
+import Recording from '../../models/recordings/recording';
+
+import dateOrNow from '../../utilities/date_time/date_or_now';
+import formatDuration from '../../utilities/date_time/format_duration';
+import formatTimestamp from '../../utilities/date_time/format_timestamp';
+import hasValue from '../../utilities/optional/has_value';
+
 import {
   AgGridReact,
   CustomCellRendererProps
@@ -27,56 +35,34 @@ import {
 } from 'react';
 
 import { useNavigate } from 'react-router-dom';
+
 import {
   Button,
   Col,
   Container,
   Row,
-  Stack
+  Stack,
+  Toast,
+  ToastContainer
 } from 'react-bootstrap';
 
 interface PageProperties {
   isUserLoggedIn: () => boolean;
 }
 
-interface Data
-{
-  folder: URL;
-}
-
-interface Video
-{
-  channelARN?: string;
-  channelName?: string;
-  folder?: URL;
-  playbackURL?: URL;
-  streamId?: string;
-  streamSessionId?: string;
-}
-
-interface Recording
-{
-  instituteId: string;
-  patientId: string;
-  sessionId: string;
-  startTimestamp: Date;
-  finishTimestamp?: Date;
-  localTimeZone: string;
-  isLiveFeed: boolean;
-  data?: Data;
-  video?: Video;
-}
-
 function SessionsSelectPage(props: PageProperties) {
+  const [errorTitle, setErrorTitle] = useState('');
+  const [errorMessage, setErrorMessage] = useState('');
+  const [showError, setShowError] = useState(false);
+  const toggleShowError = () => setShowError(!showError);
+
   const navigate = useNavigate();
 
-  useEffect(() => {{
-    !props.isUserLoggedIn() && navigate('/');
-  }}, []);
+  useEffect(() => { !props.isUserLoggedIn() && navigate('/'); }, []);
 
   const gridRef = useRef<AgGridReact<Recording>>(null);
 
-  const [selectedRecording, setSelectedRecording] = useState<Recording>();
+  const [selectedRow, setSelectedRow] = useState<Recording>();
 
   const onOpenRecording = (recording: Recording | undefined) => {
     if (!recording) {
@@ -87,52 +73,45 @@ function SessionsSelectPage(props: PageProperties) {
   };
 
   const finishTimestampCellRenderer = (params: CustomCellRendererProps<Recording, Date>) => (
-    params.value?.toLocaleString('sv-SE') ?? (
-      <span
-        className="imgSpanLiveFeed"
-      >
-        <img
-          className="live-feed-icon"
-          src="/img/live-feed.png"
-          height={40}
-          width="auto"
-        />
-      </span>
-    )
+    hasValue(params.value)
+    ? formatTimestamp(params.value!)
+    : (
+        <span
+          className="imgSpanLiveFeed"
+        >
+          <img
+            className="live-feed-icon"
+            src="/img/live-feed.png"
+            height={40}
+            width="auto"
+          />
+        </span>
+      )
   );
 
-  const [recordings] = useState<Recording[]>([
-    { instituteId: 'neuroservo', patientId: 'sbelbin', sessionId: '2024-05-07T12:25:43Z', startTimestamp: new Date(Date.parse('2024-05-07T12:23:36Z')), finishTimestamp: new Date(Date.parse('2024-05-07T12:25:43Z')), localTimeZone: 'America/Toronto', isLiveFeed: false },
-    { instituteId: 'neuroservo', patientId: 'sbelbin', sessionId: '2024-05-08T12:25:43Z', startTimestamp: new Date(Date.parse('2024-05-08T12:23:36Z')), finishTimestamp: new Date(Date.parse('2024-05-08T12:25:43Z')), localTimeZone: 'America/Toronto', isLiveFeed: false },
-    { instituteId: 'neuroservo', patientId: 'sbelbin', sessionId: '2024-05-09T12:25:43Z', startTimestamp: new Date(Date.parse('2024-05-09T12:23:36Z')), finishTimestamp: new Date(Date.parse('2024-05-09T12:25:43Z')), localTimeZone: 'America/Toronto', isLiveFeed: false },
-    { instituteId: 'neuroservo', patientId: 'sbelbin', sessionId: '2024-05-10T12:25:43Z', startTimestamp: new Date(Date.parse('2024-05-10T12:23:36Z')), finishTimestamp: new Date(Date.parse('2024-05-10T12:25:43Z')), localTimeZone: 'America/Toronto', isLiveFeed: false },
-    { instituteId: 'neuroservo', patientId: 'sbelbin', sessionId: '2024-05-11T12:25:43Z', startTimestamp: new Date(Date.parse('2024-05-11T12:23:36Z')), finishTimestamp: new Date(Date.parse('2024-05-11T12:25:43Z')), localTimeZone: 'America/Toronto', isLiveFeed: false },
-    { instituteId: 'neuroservo', patientId: 'sbelbin', sessionId: '2024-05-12T12:25:43Z', startTimestamp: new Date(Date.parse('2024-05-12T12:23:36Z')), finishTimestamp: new Date(Date.parse('2024-05-12T12:25:43Z')), localTimeZone: 'America/Toronto', isLiveFeed: false },
-    { instituteId: 'neuroservo', patientId: 'sbelbin', sessionId: '2024-05-13T12:25:43Z', startTimestamp: new Date(Date.parse('2024-05-13T12:23:36Z')), finishTimestamp: new Date(Date.parse('2024-05-13T12:25:43Z')), localTimeZone: 'America/Toronto', isLiveFeed: false },
-    { instituteId: 'neuroservo', patientId: 'sbelbin', sessionId: '2024-05-14T12:25:43Z', startTimestamp: new Date(Date.parse('2024-05-14T12:23:36Z')), finishTimestamp: new Date(Date.parse('2024-05-14T12:25:43Z')), localTimeZone: 'America/Toronto', isLiveFeed: false },
-    { instituteId: 'neuroservo', patientId: 'sbelbin', sessionId: '2024-05-15T12:25:43Z', startTimestamp: new Date(Date.parse('2024-05-15T12:23:36Z')), finishTimestamp: new Date(Date.parse('2024-05-15T12:25:43Z')), localTimeZone: 'America/Toronto', isLiveFeed: false },
-    { instituteId: 'neuroservo', patientId: 'sbelbin', sessionId: '2024-05-16T12:25:43Z', startTimestamp: new Date(Date.parse('2024-05-16T12:23:36Z')), finishTimestamp: new Date(Date.parse('2024-05-16T12:25:43Z')), localTimeZone: 'America/Toronto', isLiveFeed: false },
-    { instituteId: 'neuroservo', patientId: 'sbelbin', sessionId: '2024-05-17T12:25:43Z', startTimestamp: new Date(Date.parse('2024-05-17T12:23:36Z')), finishTimestamp: new Date(Date.parse('2024-05-17T12:25:43Z')), localTimeZone: 'America/Toronto', isLiveFeed: false },
-    { instituteId: 'neuroservo', patientId: 'sbelbin', sessionId: '2024-05-18T12:25:43Z', startTimestamp: new Date(Date.parse('2024-05-18T12:23:36Z')), finishTimestamp: new Date(Date.parse('2024-05-18T12:25:43Z')), localTimeZone: 'America/Toronto', isLiveFeed: false },
-    { instituteId: 'neuroservo', patientId: 'sbelbin', sessionId: '2024-05-19T12:25:43Z', startTimestamp: new Date(Date.parse('2024-05-19T12:23:36Z')), finishTimestamp: new Date(Date.parse('2024-05-19T12:25:43Z')), localTimeZone: 'America/Toronto', isLiveFeed: false },
-    { instituteId: 'neuroservo', patientId: 'sbelbin', sessionId: '2024-05-20T12:25:43Z', startTimestamp: new Date(Date.parse('2024-05-20T12:23:36Z')), finishTimestamp: new Date(Date.parse('2024-05-20T12:25:43Z')), localTimeZone: 'America/Toronto', isLiveFeed: false },
-    { instituteId: 'neuroservo', patientId: 'sbelbin', sessionId: '2024-05-21T12:25:43Z', startTimestamp: new Date(Date.parse('2024-05-21T12:23:36Z')), finishTimestamp: new Date(Date.parse('2024-05-21T12:25:43Z')), localTimeZone: 'America/Toronto', isLiveFeed: false },
-    { instituteId: 'neuroservo', patientId: 'sbelbin', sessionId: '2024-05-22T12:25:43Z', startTimestamp: new Date(Date.parse('2024-05-22T12:23:36Z')), finishTimestamp: new Date(Date.parse('2024-05-22T12:25:43Z')), localTimeZone: 'America/Toronto', isLiveFeed: false },
-    { instituteId: 'neuroservo', patientId: 'sbelbin', sessionId: '2024-05-23T12:25:43Z', startTimestamp: new Date(Date.parse('2024-05-23T12:23:36Z')), finishTimestamp: new Date(Date.parse('2024-05-23T12:25:43Z')), localTimeZone: 'America/Toronto', isLiveFeed: false },
-    { instituteId: 'neuroservo', patientId: 'sbelbin', sessionId: '2024-05-24T12:25:43Z', startTimestamp: new Date(Date.parse('2024-05-24T12:23:36Z')), finishTimestamp: new Date(Date.parse('2024-05-24T12:25:43Z')), localTimeZone: 'America/Toronto', isLiveFeed: false },
-    { instituteId: 'neuroservo', patientId: 'sbelbin', sessionId: '2024-05-25T12:25:43Z', startTimestamp: new Date(Date.parse('2024-05-25T12:23:36Z')), finishTimestamp: new Date(Date.parse('2024-05-25T12:25:43Z')), localTimeZone: 'America/Toronto', isLiveFeed: false },
-    { instituteId: 'neuroservo', patientId: 'sbelbin', sessionId: '2024-05-26T12:25:43Z', startTimestamp: new Date(Date.parse('2024-05-26T12:23:36Z')), finishTimestamp: new Date(Date.parse('2024-05-26T12:25:43Z')), localTimeZone: 'America/Toronto', isLiveFeed: false },
-    { instituteId: 'neuroservo', patientId: 'sbelbin', sessionId: '2024-05-27T12:25:43Z', startTimestamp: new Date(Date.parse('2024-05-27T12:23:36Z')), finishTimestamp: new Date(Date.parse('2024-05-27T12:25:43Z')), localTimeZone: 'America/Toronto', isLiveFeed: false },
-    { instituteId: 'neuroservo', patientId: 'sbelbin', sessionId: '2024-05-28T12:25:43Z', startTimestamp: new Date(Date.parse('2024-05-28T12:23:36Z')), finishTimestamp: new Date(Date.parse('2024-05-28T12:25:43Z')), localTimeZone: 'America/Toronto', isLiveFeed: false },
-    { instituteId: 'neuroservo', patientId: 'sbelbin', sessionId: '2024-05-29T12:25:43Z', startTimestamp: new Date(Date.parse('2024-05-29T12:23:36Z')), finishTimestamp: new Date(Date.parse('2024-05-29T12:25:43Z')), localTimeZone: 'America/Toronto', isLiveFeed: false },
-    { instituteId: 'neuroservo', patientId: 'sbelbin', sessionId: '2024-05-30T12:25:43Z', startTimestamp: new Date(Date.parse('2024-05-30T12:23:36Z')), finishTimestamp: new Date(Date.parse('2024-05-30T12:25:43Z')), localTimeZone: 'America/Toronto', isLiveFeed: false },
-    { instituteId: 'neuroservo', patientId: 'sbelbin', sessionId: '2024-06-01T12:25:43Z', startTimestamp: new Date(Date.parse('2024-06-01T12:23:36Z')), finishTimestamp: new Date(Date.parse('2024-06-01T12:25:43Z')), localTimeZone: 'America/Toronto', isLiveFeed: false },
-    { instituteId: 'neuroservo', patientId: 'sbelbin', sessionId: '2024-06-02T12:25:43Z', startTimestamp: new Date(Date.parse('2024-06-02T12:23:36Z')), finishTimestamp: new Date(Date.parse('2024-06-02T12:25:43Z')), localTimeZone: 'America/Toronto', isLiveFeed: false },
-    { instituteId: 'neuroservo', patientId: 'sbelbin', sessionId: '2024-06-03T12:25:43Z', startTimestamp: new Date(Date.parse('2024-06-03T12:23:36Z')), finishTimestamp: new Date(Date.parse('2024-06-03T12:25:43Z')), localTimeZone: 'America/Toronto', isLiveFeed: false },
-    { instituteId: 'neuroservo', patientId: 'sbelbin', sessionId: '2024-06-04T12:25:43Z', startTimestamp: new Date(Date.parse('2024-06-04T12:23:36Z')), finishTimestamp: new Date(Date.parse('2024-06-04T12:25:43Z')), localTimeZone: 'America/Toronto', isLiveFeed: false },
-    { instituteId: 'neuroservo', patientId: 'sbelbin', sessionId: '2024-06-05T12:25:43Z', startTimestamp: new Date(Date.parse('2024-06-05T12:23:36Z')), finishTimestamp: new Date(Date.parse('2024-06-05T12:25:43Z')), localTimeZone: 'America/Toronto', isLiveFeed: false },
-    { instituteId: 'neuroservo', patientId: 'sbelbin', sessionId: '2024-06-06T12:25:43Z', startTimestamp: new Date(Date.parse('2024-06-06T12:23:36Z')), finishTimestamp: undefined, localTimeZone: 'America/Toronto', isLiveFeed: true }
-  ]);
+  const durationCellRenderer = (params: CustomCellRendererProps<Recording, Number>) => (
+    hasValue(params.node.data) &&
+    formatDuration(params.node.data!.startTimestamp,
+                   dateOrNow(params.node.data!.finishTimestamp))
+  );
+
+  const [rows, setRows] = useState<Recording[]>([]);
+
+  const loadRows = async () => {
+    fetchRecordings()
+    .then((recordings) => {
+      setRows(recordings);
+    })
+    .catch((error) => {
+      setRows([]);
+      setErrorTitle('Failed to fetch the recording sessions.');
+      const errorMessage = `${error}`.split(':').pop() ?? `${error}`;
+      setErrorMessage(errorMessage);
+      setShowError(true);
+    });
+  };
+
+  useEffect(() => { loadRows() }, []);
 
   const [colDefs] = useState<ColDef[]>([
     {
@@ -141,8 +120,8 @@ function SessionsSelectPage(props: PageProperties) {
       headerName: 'Institute ID'
     },
     {
-      field: 'patientId',
       cellDataType: 'text',
+      field: 'patientId',
       headerName: 'Patient ID'
     },
     {
@@ -157,13 +136,20 @@ function SessionsSelectPage(props: PageProperties) {
       filter: 'agDateColumnFilter',
       headerName: 'Finishing Time',
       cellRenderer: finishTimestampCellRenderer,
-      comparator: (lhs: Date | undefined, rhs: Date | undefined) => {
-        return (!lhs)        ? 1
-             : (!rhs)        ? -1
-             : (lhs === rhs) ? 0
-             : (lhs > rhs)   ? 1
+      comparator: (lhs: Date | null | undefined, rhs: Date | null | undefined) => {
+        return (lhs === rhs)  ? 0
+             : !hasValue(lhs) ? 1
+             : !hasValue(rhs) ? -1
+             : (lhs! > rhs!)  ? 1
              : -1;
       }
+    },
+    {
+      cellDataType: 'number',
+      field: 'duration',
+      filter: false,
+      headerName: 'Duration',
+      cellRenderer: durationCellRenderer
     }
   ]);
 
@@ -189,16 +175,17 @@ function SessionsSelectPage(props: PageProperties) {
             (params.newValue) ? new Date(Date.parse(params.newValue)) : null,
 
           valueFormatter: (params: ValueFormatterLiteParams<Recording, Date>) =>
-            params.value?.toLocaleString('sv-SE') ?? ''
+            params.value ? formatTimestamp(params.value) : ''
         }
       };
     },
     []);
 
   //
-  // Upon initial presentation, the order of the recording sessions is the following:
-  //  - ongoing live-feed sessions
-  //  - most recent based on when it started
+  // The grid initial presentation is to present the recording sessions in the following order.
+  //  - currently an ongoing live-feed
+  //  - most recently finished
+  //  - most recently started
   //  - institution
   //  - patient
   //
@@ -230,62 +217,62 @@ function SessionsSelectPage(props: PageProperties) {
     const KEY_UP = 'ArrowUp';
     const KEY_DOWN = 'ArrowDown';
 
-    if (params.key === KEY_DOWN || params.key === KEY_UP) {
-      params.api.forEachNode(node => {
-        if (node.rowIndex === suggestedNextCell?.rowIndex) {
-          node.setSelected(true);
-        }
-      });
+    if (suggestedNextCell && (params.key === KEY_DOWN || params.key === KEY_UP)) {
+      params.api.getDisplayedRowAtIndex(suggestedNextCell.rowIndex)?.setSelected(true);
     }
 
     return suggestedNextCell;
   };
 
   const onRowDoubleClicked = useCallback((event: RowDoubleClickedEvent<Recording>) =>
-          onOpenRecording(event.data),
-      [onOpenRecording]);
+      onOpenRecording(event.data),
+    [onOpenRecording]);
 
   const onRowSelected = useCallback((event: RowSelectedEvent<Recording>) =>
-          setSelectedRecording(event.data),
-    [setSelectedRecording]);
+      setSelectedRow(event.data),
+    [setSelectedRow]);
 
   const onSelectionChanged = useCallback((event: SelectionChangedEvent<Recording>) =>
-          setSelectedRecording(event.api.getSelectedNodes()?.at(0)?.data),
-    [setSelectedRecording]);
-
-  const onRefreshRecordings = () => {
-    const now = new Date();
-
-    for(let index = 0; index < 5; ++index) {
-      const finishTimestamp = new Date(now.getTime() + (index * 3600000));
-      const startTimestamp = new Date(finishTimestamp.getTime() - 3600000);
-      const sessionId = startTimestamp.toISOString();
-
-      recordings.push(
-        { instituteId: 'neuroservo', patientId: 'sbelbin', sessionId: sessionId, startTimestamp: startTimestamp, finishTimestamp: undefined, localTimeZone: 'America/Toronto', isLiveFeed: true },
-      );
-    };
-
-    window.alert('Refreshing the recording sessions.');
-
-    gridRef.current!.api.setGridOption('rowData', recordings);
-  };
+      setSelectedRow(event.api.getSelectedNodes()?.at(0)?.data),
+    [setSelectedRow]);
 
   return (
     <Container>
       <Stack>
+        <div className="vr" />
+        <div className="vr" />
         <Row>
           <Col md={{ span: 1, offset: 0 }} >
             <Button
-              onClick={() => onOpenRecording(selectedRecording)}
-              disabled={!selectedRecording}
+              onClick={() => onOpenRecording(selectedRow)}
+              disabled={!selectedRow}
             >
               Open
             </Button>
           </Col>
-          <Col md={{ span: 0, offset: 9 }} >
+          <Col md={{ span: 0, offset: 3 }}>
+            <div>
+              <ToastContainer>
+                <Toast
+                  bg="danger"
+                  show={showError}
+                  onClose={toggleShowError}
+                >
+                  <Toast.Header>
+                    <strong>
+                      {errorTitle}
+                    </strong>
+                  </Toast.Header>
+                  <Toast.Body>
+                    {errorMessage}
+                  </Toast.Body>
+                </Toast>
+              </ToastContainer>
+            </div>
+          </Col>
+          <Col md={{ span: 0, offset: 6 }} >
             <Button
-              onClick={() => onRefreshRecordings()}
+              onClick={ loadRows }
             >
               Refresh
             </Button>
@@ -296,7 +283,7 @@ function SessionsSelectPage(props: PageProperties) {
           className="ag-theme-quartz-dark"
           style={{
             height: 500,
-            width: 850,
+            width: 1040,
           }}
         >
           <AgGridReact<Recording>
@@ -312,7 +299,7 @@ function SessionsSelectPage(props: PageProperties) {
             paginationPageSize={paginationPageSize}
             paginationPageSizeSelector={paginationPageSizeSelector}
             ref={gridRef}
-            rowData={recordings}
+            rowData={rows}
             rowSelection={'single'}
             suppressCellFocus={true}
             suppressRowClickSelection={false}
