@@ -90,7 +90,7 @@ function SessionsSelectPage(props: PageProperties) {
   );
 
   const durationCellRenderer = (params: CustomCellRendererProps<Recording, Number>) => (
-    hasValue(params.node.data) &&
+    hasValue(params.node.data?.startTimestamp) &&
     formatDuration(params.node.data!.startTimestamp,
                    dateOrNow(params.node.data!.finishTimestamp))
   );

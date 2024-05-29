@@ -31,7 +31,7 @@ async function fetchRecordings() : Promise<Recording[]> {
     startTimestamp: parseDate(recording.startTimestamp),
     finishTimestamp: parseOptionalDate(recording.finishTimestamp),
     localTimeZone: recording.localTimeZone,
-    isLiveFeed: hasValue(recording.finishTimestamp),
+    isLiveFeed: !hasValue(recording.finishTimestamp)
   }));
 }
 
