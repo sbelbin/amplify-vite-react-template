@@ -120,8 +120,8 @@ function SessionsSelectPage(props: PageProperties) {
       headerName: 'Institute ID'
     },
     {
-      field: 'patientId',
       cellDataType: 'text',
+      field: 'patientId',
       headerName: 'Patient ID'
     },
     {
@@ -217,27 +217,23 @@ function SessionsSelectPage(props: PageProperties) {
     const KEY_UP = 'ArrowUp';
     const KEY_DOWN = 'ArrowDown';
 
-    if (params.key === KEY_DOWN || params.key === KEY_UP) {
-      params.api.forEachNode(node => {
-        if (node.rowIndex === suggestedNextCell?.rowIndex) {
-          node.setSelected(true);
-        }
-      });
+    if (suggestedNextCell && (params.key === KEY_DOWN || params.key === KEY_UP)) {
+      params.api.getDisplayedRowAtIndex(suggestedNextCell.rowIndex)?.setSelected(true);
     }
 
     return suggestedNextCell;
   };
 
   const onRowDoubleClicked = useCallback((event: RowDoubleClickedEvent<Recording>) =>
-          onOpenRecording(event.data),
-      [onOpenRecording]);
+      onOpenRecording(event.data),
+    [onOpenRecording]);
 
   const onRowSelected = useCallback((event: RowSelectedEvent<Recording>) =>
-          setSelectedRow(event.data),
+      setSelectedRow(event.data),
     [setSelectedRow]);
 
   const onSelectionChanged = useCallback((event: SelectionChangedEvent<Recording>) =>
-          setSelectedRow(event.api.getSelectedNodes()?.at(0)?.data),
+      setSelectedRow(event.api.getSelectedNodes()?.at(0)?.data),
     [setSelectedRow]);
 
   return (
