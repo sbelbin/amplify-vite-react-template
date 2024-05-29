@@ -10,7 +10,7 @@ import { CustomLoadingCellRendererProps } from 'ag-grid-react';
  *          for an example on how to set this up. This is practical on infinite scroll
  *          or when enabling server-side rendering.
  */
-function loadingGridRenderer(props: CustomLoadingCellRendererProps & { loadingMessage: string | undefined | null }) {
+function loadingGridRenderer(props: CustomLoadingCellRendererProps & { loadingMessage: string | null | undefined }) {
   return (
     <div className="ag-custom-loading-cell" style={{ paddingLeft: '10px', lineHeight: '25px' }}>
       <i className="fas fa-spinner fa-pulse"/>

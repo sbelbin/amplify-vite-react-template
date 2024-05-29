@@ -1,4 +1,10 @@
-import type { Schema } from '../../../amplify/data/resource';
+import fetchRecordings from '../../models/recordings/fetch_recordings';
+import Recording from '../../models/recordings/recording';
+
+import dateOrNow from '../../utilities/date_time/date_or_now';
+import formatDuration from '../../utilities/date_time/format_duration';
+import formatTimestamp from '../../utilities/date_time/format_timestamp';
+import hasValue from '../../utilities/optional/has_value';
 
 import {
   AgGridReact,
@@ -20,8 +26,6 @@ import {
 import 'ag-grid-community/styles/ag-grid.css';
 import 'ag-grid-community/styles/ag-theme-quartz.css';
 
-import { generateClient } from 'aws-amplify/data';
-
 import {
   useCallback,
   useEffect,
@@ -37,87 +41,28 @@ import {
   Col,
   Container,
   Row,
-  Stack
+  Stack,
+  Toast,
+  ToastContainer
 } from 'react-bootstrap';
 
 interface PageProperties {
   isUserLoggedIn: () => boolean;
 }
 
-interface Data
-{
-  folder: URL;
-}
-
-interface Video
-{
-  channelARN?: string;
-  channelName?: string;
-  folder?: URL;
-  playbackURL?: URL;
-  streamId?: string;
-  streamSessionId?: string;
-}
-
-interface Recording
-{
-  id: string;
-  instituteId: string;
-  patientId: string;
-  sessionId: string;
-  startTimestamp: Date;
-  finishTimestamp?: Date;
-  localTimeZone: string;
-  isLiveFeed: boolean;
-  data?: Data;
-  video?: Video;
-}
-
-/**
- * Returns a textual representation of a duration that covers days/hours/minutes/seconds.
- *
- * @param from - The starting point-in-time.
- * @param until - The finishing point-in-time. When it's unknown then assume now.
- * @returns A textual representation.
- *
- * @remarks
- * When the duration is in days or hours, then minutes & seconds are zero padded.
- * When the duration is in minutes, then seconds is padded.
- * When the duration is in seconds, then seconds are displayed.
- */
-function formatDuration(from: Date, until: Date | undefined | null): string {
-  let remainder = (until?.getTime() ?? Date.now()) - from.getTime();
-
-  const SECOND = 1000;
-  const MINUTE = 60 * SECOND;
-  const HOUR = 60 * MINUTE;
-  const DAY = 24 * HOUR;
-
-  const days = Math.floor(remainder / DAY);
-  remainder -= days * DAY;
-
-  const hours = Math.floor(remainder / HOUR);
-  remainder -= hours * HOUR;
-
-  const minutes = Math.floor(remainder / MINUTE);
-  remainder -= minutes * MINUTE;
-
-  const seconds = Math.floor(remainder / SECOND);
-
-  return days    ? `${days} ${hours}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`
-       : hours   ? `${hours}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`
-       : minutes ? `${minutes}:${seconds.toString().padStart(2, '0')}`
-       : `${seconds} seconds`
-}
-
 function SessionsSelectPage(props: PageProperties) {
+  const [errorTitle, setErrorTitle] = useState('');
+  const [errorMessage, setErrorMessage] = useState('');
+  const [showError, setShowError] = useState(false);
+  const toggleShowError = () => setShowError(!showError);
+
   const navigate = useNavigate();
 
   useEffect(() => { !props.isUserLoggedIn() && navigate('/'); }, []);
 
   const gridRef = useRef<AgGridReact<Recording>>(null);
 
-  const [selectedRecording, setSelectedRecording] = useState<Recording>();
+  const [selectedRow, setSelectedRow] = useState<Recording>();
 
   const onOpenRecording = (recording: Recording | undefined) => {
     if (!recording) {
@@ -128,53 +73,45 @@ function SessionsSelectPage(props: PageProperties) {
   };
 
   const finishTimestampCellRenderer = (params: CustomCellRendererProps<Recording, Date>) => (
-    params.value?.toLocaleString('sv-SE') ?? (
-      <span
-        className="imgSpanLiveFeed"
-      >
-        <img
-          className="live-feed-icon"
-          src="/img/live-feed.png"
-          height={40}
-          width="auto"
-        />
-      </span>
-    )
+    hasValue(params.value)
+    ? formatTimestamp(params.value!)
+    : (
+        <span
+          className="imgSpanLiveFeed"
+        >
+          <img
+            className="live-feed-icon"
+            src="/img/live-feed.png"
+            height={40}
+            width="auto"
+          />
+        </span>
+      )
   );
 
   const durationCellRenderer = (params: CustomCellRendererProps<Recording, Number>) => (
-    params.node.data && formatDuration(params.node.data.startTimestamp, params.node.data.finishTimestamp)
+    hasValue(params.node.data) &&
+    formatDuration(params.node.data!.startTimestamp,
+                   dateOrNow(params.node.data!.finishTimestamp))
   );
 
-  const [recordings, setRecordings] = useState<Recording[]>([]);
+  const [rows, setRows] = useState<Recording[]>([]);
 
-  const fetchRecordings = async () => {
-    const client = generateClient<Schema>();
-
-    client.models.recordings.list()
-    .then((result) => {
-      if (result.errors) {
-        throw new Error(result.errors.map((error) => error.message).join(', '));
-      }
-
-      setRecordings(result.data.map((recording) => ({
-        id: recording.id,
-        instituteId: recording.instituteId,
-        sessionId: recording.sessionId,
-        patientId: recording.patientId,
-        startTimestamp: new Date(Date.parse(recording.startTimestamp)),
-        finishTimestamp: (recording.finishTimestamp !== null && recording.finishTimestamp !== undefined) ? new Date(Date.parse(recording.startTimestamp)) : undefined,
-        localTimeZone: recording.localTimeZone,
-        isLiveFeed: (recording.finishTimestamp === null || recording.finishTimestamp === undefined),
-      })));
+  const loadRows = async () => {
+    fetchRecordings()
+    .then((recordings) => {
+      setRows(recordings);
     })
     .catch((error) => {
-      setRecordings([]);
-      console.error(`Failed to fetch the recording sessions from the table. Reason(s): ${error}`);
+      setRows([]);
+      setErrorTitle('Failed to fetch the recording sessions.');
+      const errorMessage = `${error}`.split(':').pop() ?? `${error}`;
+      setErrorMessage(errorMessage);
+      setShowError(true);
     });
   };
 
-  useEffect(() => { fetchRecordings() }, []);
+  useEffect(() => { loadRows() }, []);
 
   const [colDefs] = useState<ColDef[]>([
     {
@@ -199,11 +136,11 @@ function SessionsSelectPage(props: PageProperties) {
       filter: 'agDateColumnFilter',
       headerName: 'Finishing Time',
       cellRenderer: finishTimestampCellRenderer,
-      comparator: (lhs: Date | undefined | null, rhs: Date | undefined | null) => {
-        return (lhs === rhs) ? 0
-             : (lhs === undefined || lhs === null) ? 1
-             : (rhs === undefined || rhs === null) ? -1
-             : (lhs > rhs) ? 1
+      comparator: (lhs: Date | null | undefined, rhs: Date | null | undefined) => {
+        return (lhs === rhs)  ? 0
+             : !hasValue(lhs) ? 1
+             : !hasValue(rhs) ? -1
+             : (lhs! > rhs!)  ? 1
              : -1;
       }
     },
@@ -238,16 +175,17 @@ function SessionsSelectPage(props: PageProperties) {
             (params.newValue) ? new Date(Date.parse(params.newValue)) : null,
 
           valueFormatter: (params: ValueFormatterLiteParams<Recording, Date>) =>
-            params.value?.toLocaleString('sv-SE') ?? ''
+            params.value ? formatTimestamp(params.value) : ''
         }
       };
     },
     []);
 
   //
-  // Upon initial presentation, the order of the recording sessions is the following:
-  //  - ongoing live-feed sessions
-  //  - most recent based on when it started
+  // The grid initial presentation is to present the recording sessions in the following order.
+  //  - currently an ongoing live-feed
+  //  - most recently finished
+  //  - most recently started
   //  - institution
   //  - patient
   //
@@ -295,28 +233,50 @@ function SessionsSelectPage(props: PageProperties) {
       [onOpenRecording]);
 
   const onRowSelected = useCallback((event: RowSelectedEvent<Recording>) =>
-          setSelectedRecording(event.data),
-    [setSelectedRecording]);
+          setSelectedRow(event.data),
+    [setSelectedRow]);
 
   const onSelectionChanged = useCallback((event: SelectionChangedEvent<Recording>) =>
-          setSelectedRecording(event.api.getSelectedNodes()?.at(0)?.data),
-    [setSelectedRecording]);
+          setSelectedRow(event.api.getSelectedNodes()?.at(0)?.data),
+    [setSelectedRow]);
 
   return (
     <Container>
       <Stack>
+        <div className="vr" />
+        <div className="vr" />
         <Row>
           <Col md={{ span: 1, offset: 0 }} >
             <Button
-              onClick={() => onOpenRecording(selectedRecording)}
-              disabled={!selectedRecording}
+              onClick={() => onOpenRecording(selectedRow)}
+              disabled={!selectedRow}
             >
               Open
             </Button>
           </Col>
-          <Col md={{ span: 0, offset: 9 }} >
+          <Col md={{ span: 0, offset: 3 }}>
+            <div>
+              <ToastContainer>
+                <Toast
+                  bg="danger"
+                  show={showError}
+                  onClose={toggleShowError}
+                >
+                  <Toast.Header>
+                    <strong>
+                      {errorTitle}
+                    </strong>
+                  </Toast.Header>
+                  <Toast.Body>
+                    {errorMessage}
+                  </Toast.Body>
+                </Toast>
+              </ToastContainer>
+            </div>
+          </Col>
+          <Col md={{ span: 0, offset: 6 }} >
             <Button
-              onClick={ fetchRecordings }
+              onClick={ loadRows }
             >
               Refresh
             </Button>
@@ -327,7 +287,7 @@ function SessionsSelectPage(props: PageProperties) {
           className="ag-theme-quartz-dark"
           style={{
             height: 500,
-            width: 1025,
+            width: 1040,
           }}
         >
           <AgGridReact<Recording>
@@ -343,7 +303,7 @@ function SessionsSelectPage(props: PageProperties) {
             paginationPageSize={paginationPageSize}
             paginationPageSizeSelector={paginationPageSizeSelector}
             ref={gridRef}
-            rowData={recordings}
+            rowData={rows}
             rowSelection={'single'}
             suppressCellFocus={true}
             suppressRowClickSelection={false}
