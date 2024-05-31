@@ -1,5 +1,5 @@
 import './App.css';
-import { authenticatedUserLoginId } from './authentication/user';
+import * as authentication from './authentication';
 
 import 'bootstrap/dist/css/bootstrap.min.css';
 
@@ -24,7 +24,7 @@ function App() {
 
   useEffect(() => {
       const setLoginId = async () => {
-        setUserName(await authenticatedUserLoginId() ?? '');
+        setUserName(await authentication.currentUserName() ?? '');
       };
 
       setLoginId();

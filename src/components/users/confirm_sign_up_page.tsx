@@ -31,7 +31,8 @@ function UserConfirmSignUpPage(props: PageProperties) {
     .then((result) => {
       if (result.isSignUpComplete && result.userId) {
         props.onUserLoggedIn(result.userId);
-      } else if (result.isSignUpComplete) {
+      }
+      else if (result.isSignUpComplete) {
         navigate('/users/login');
       }
     })
