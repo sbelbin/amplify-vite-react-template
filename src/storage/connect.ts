@@ -3,10 +3,9 @@ import { Client } from './types';
 import * as authentication from '../authentication';
 
 import { S3Client } from '@aws-sdk/client-s3';
+import { AwsCredentialIdentity } from '@aws-sdk/types';
 
-import { AWSCredentials } from '@aws-amplify/core/internals/utils';
-
-export function connectWithCredentials(region: string, credentials: AWSCredentials | undefined): Client {
+export function connectWithCredentials(region: string, credentials: AwsCredentialIdentity | undefined): Client {
   return new S3Client({ region: region, credentials: credentials });
 }
 
