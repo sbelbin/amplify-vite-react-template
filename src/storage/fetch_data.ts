@@ -1,3 +1,4 @@
+import { assertAWSResponse } from '../utilities/error_handling/aws_assert_response';
 import { maximumChunkSize } from './constants';
 
 import {
@@ -27,13 +28,9 @@ export function fetchDataSegment(client: Client,
                                  bucket: string,
                                  key: string,
                                  offsetRange: OffsetRange): Promise<Uint8Array> {
-  const command = new GetObjectCommand({
-                        Bucket: bucket,
-                        Key: key,
-                        Range: composeRange(offsetRange),
-                      });
+  const command = new GetObjectCommand({ Bucket: bucket, Key: key });
 
-  return getDataSegment(client, command);
+  return getDataSegment(client, command, offsetRange);
 }
 
 /**
@@ -67,11 +64,15 @@ export async function fetchData(client: Client,
   while (currentOffset < finishOffset) {
     const bytesToRead = Math.min(finishOffset - currentOffset, chunkSize);
 
-    command.input.Range = composeRange({ start: currentOffset, finish: currentOffset + bytesToRead - 1 });
+    const offsetRange =
+          {
+            start: currentOffset,
+            finish: currentOffset + bytesToRead - 1
+          };
 
-    dataPayload.set(await getDataSegment(client, command), currentOffset);
-
-    currentOffset += bytesToRead;
+    const dataSegment = await getDataSegment(client, command, offsetRange);
+    dataPayload.set(dataSegment, currentOffset);
+    currentOffset += dataSegment.byteLength;
   }
 
   return buffer;
@@ -81,27 +82,10 @@ export async function fetchData(client: Client,
 // Internal
 //
 
-function composeRange(offsetRange: OffsetRange) : string {
-  return `bytes=${offsetRange.start}-${offsetRange.finish}`;
-}
-
-function assertResponse(response: GetObjectCommandOutput): GetObjectCommandOutput {
-
-  // if (result.httpStatusCode < 200 && result.httpStatusCode > 299) {
-  //     console.log(`An invalid HTTP response has occurred. http_status_code: ${result.httpStatusCode}.`);
-  //     throw new Error(`An invalid HTTP response has occurred. http_status_code: ${result.httpStatusCode}.`);
-  // }
-
-  return response;
-}
-
-async function sendCommand(client: Client,
-                           command: GetObjectCommand): Promise<GetObjectCommandOutput> {
-  return assertResponse(await client.send(command));
-}
-
 async function getDataSegment(client: Client,
-                              command: GetObjectCommand): Promise<Uint8Array> {
+                              command: GetObjectCommand,
+                              offsetRange: OffsetRange): Promise<Uint8Array> {
+  command.input.Range = `bytes=${offsetRange.start}-${offsetRange.finish}`;
   const response = await sendCommand(client, command);
 
   if (!response.Body) {
@@ -109,4 +93,9 @@ async function getDataSegment(client: Client,
   }
 
   return await response.Body.transformToByteArray();
+}
+
+async function sendCommand(client: Client,
+  command: GetObjectCommand): Promise<GetObjectCommandOutput> {
+return assertAWSResponse(await client.send(command));
 }

@@ -8,6 +8,7 @@ import UserConfirmSignUpPage from './components/users/confirm_sign_up_page';
 import UserLoginPage from './components/users/login_page';
 import UserLoggedOutPage from './components/users/logged_out_page';
 import UserSignUpPage from './components/users/sign_up_page';
+import SessionPage from './components/sessions/session_page';
 import SessionsSelectPage from './components/sessions/sessions_selection_page';
 import SiteNavigationBar from './components/site/navigation_bar';
 import SiteFooter from './components/site/footer';
@@ -95,6 +96,15 @@ function App() {
           <Route
             path="/sessions/select"
             element={<SessionsSelectPage isUserLoggedIn={isUserLoggedIn} />}
+          />
+          <Route
+            path="/sessions/id"
+            element={<SessionPage
+                        isUserLoggedIn={isUserLoggedIn}
+                        storageRegion={'us-east-1'}
+                        bucket={'veegix8iosdev140644-dev'}
+                        folder={'recordings/sbelbin/2024-05-09T201117.125Z/data/'}
+                     />}
           />
         </Routes>
       </Row>

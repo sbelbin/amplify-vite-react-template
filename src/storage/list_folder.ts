@@ -1,5 +1,7 @@
 import { unfilteredListFiles } from './constants';
 
+import { assertAWSResponse } from '../utilities/error_handling/aws_assert_response';
+
 import {
   Client,
   File,
@@ -77,7 +79,6 @@ export async function listFilesModifiedAfter(client: Client,
 {
   const fileListFilter = (file: File) => {
     const fileLastModified = file.LastModified?.getTime() ?? 0;
-
     return (fileLastModified > referenceTime.getTime()) && customFilter(file);
   }
 
@@ -88,15 +89,7 @@ export async function listFilesModifiedAfter(client: Client,
 // Internal
 //
 
-function assertResponse(response: ListObjectsV2CommandOutput): ListObjectsV2CommandOutput {
-  // if (response.httpStatusCode < 200 && response.httpStatusCode > 299) {
-  //     throw new Error(`An invalid HTTP response has occurred. http_status_code: ${response.httpStatusCode}.`);
-  // }
-
-  return response;
-}
-
 async function sendCommand(client: Client,
                            command: ListObjectsV2Command): Promise<ListObjectsV2CommandOutput> {
-  return assertResponse(await client.send(command));
+  return assertAWSResponse(await client.send(command));
 }

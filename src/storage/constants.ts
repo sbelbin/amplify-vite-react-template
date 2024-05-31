@@ -9,20 +9,22 @@ export const maximumChunkSize = 10 * MB;
 
 export const unfilteredListFiles: ListFilesFilter = () => true;
 
-export const orderByLastModifiedAscending: ListFilesOrderBy = (lhs: File, rhs: File) => {
+const compareLastModified = (lhs: File, rhs: File, isDescending: boolean) => {
   const lhsLastModified = lhs.LastModified?.getTime() ?? 0;
   const rhsLastModified = rhs.LastModified?.getTime() ?? 0;
 
-  return (lhsLastModified === rhsLastModified) ? 0
-       : (lhsLastModified < rhsLastModified) ? 1
-       : -1;
+  const comparison = lhsLastModified - rhsLastModified;
+
+  return isDescending
+       ? -comparison
+       : comparison;
+}
+
+
+export const orderByLastModifiedAscending: ListFilesOrderBy = (lhs: File, rhs: File) => {
+  return compareLastModified(lhs, rhs, false);
 }
 
 export const orderByLastModifiedDescending: ListFilesOrderBy = (lhs: File, rhs: File) => {
-  const lhsLastModified = lhs.LastModified?.getTime() ?? 0;
-  const rhsLastModified = rhs.LastModified?.getTime() ?? 0;
-
-  return (lhsLastModified === rhsLastModified) ? 0
-       : (lhsLastModified > rhsLastModified) ? 1
-       : -1;
+  return compareLastModified(lhs, rhs, true);
 }

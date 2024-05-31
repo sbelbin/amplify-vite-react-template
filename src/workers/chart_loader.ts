@@ -1,73 +1,81 @@
 import * as storage from '../storage';
 
+import { AWSCredentials } from '@aws-amplify/core/internals/utils';
+
 export const enum ChartLoaderLoadSequence {
   Earliest = 'earliest',
   Latest = 'latest'
 }
 
-export const enum ChartLoaderEventKinds {
+export const enum ChartLoaderMessageKinds {
   Initialize = 'initialize',
   Start = 'start',
   Stop = 'stop',
-  Dispose = 'dispose'
+  Terminate = 'terminate'
 }
 
-export interface ChartLoaderInitializeEvent {
+export interface ChartLoaderMessageInitialize {
+  kind: ChartLoaderMessageKinds.Initialize;
   storageRegion: string;
-  storageCredentials: unknown;
+  storageCredentials?: AWSCredentials;
   bucket: string;
   folder: string;
   filesLoaded: string[];
   loadSequence: ChartLoaderLoadSequence;
 }
 
-export interface ChartLoaderStartEvent {
+export interface ChartLoaderMessageStart {
+  kind: ChartLoaderMessageKinds.Start;
   interval: number;
 }
 
-export interface ChartLoaderStopEvent {
-  stop: boolean;
+export interface ChartLoaderMessageStop {
+  kind: ChartLoaderMessageKinds.Stop;
 }
 
-export interface ChartLoaderTerminateEvent {
-  terminate: boolean;
+export interface ChartLoaderMessageTerminate {
+  kind: ChartLoaderMessageKinds.Terminate;
 }
 
-export interface ChartLoaderEvent {
-  initialize?: ChartLoaderInitializeEvent;
-  start?: ChartLoaderStartEvent;
-  stop?: ChartLoaderStopEvent;
-  terminate?: ChartLoaderTerminateEvent;
-}
+export type ChartLoaderMessage = ChartLoaderMessageInitialize | ChartLoaderMessageStart | ChartLoaderMessageStop | ChartLoaderMessageTerminate;
 
 ///
 /// Internal
 ///
 
-let loader: ChartLoader | undefined;
+let chartLoader: ChartLoader | undefined;
 
 onmessage = (message) => {
-  if (message.data.initialize) {
-    const event = message.data.initialize;
+  switch (message.data.kind) {
+    case ChartLoaderMessageKinds.Initialize:
+      {
+        const msg: ChartLoaderMessageInitialize = message.data;
 
-    loader?.dispose();
+        chartLoader?.dispose();
 
-    loader = new ChartLoader(storage.connectWithCredentials(event.storageRegion, event.storageCredentials),
-                             event.bucket,
-                             event.folder,
-                             new Set(event.filesLoaded),
-                             event.loadSequence);
-  }
-  else if (message.data.start) {
-    const event = message.data.start;
-    loader?.start(event.monitorFolderInterval);
-  }
-  else if (message.data.stop) {
-    loader?.stop();
-  }
-  else if (message.data.terminate) {
-    loader?.dispose();
-    loader = undefined;
+        chartLoader = new ChartLoader(storage.connectWithCredentials(msg.storageRegion, msg.storageCredentials),
+                                 msg.bucket,
+                                 msg.folder,
+                                 new Set(msg.filesLoaded),
+                                 msg.loadSequence);
+      }
+      break;
+
+    case ChartLoaderMessageKinds.Start:
+      {
+        const msg: ChartLoaderMessageStart = message.data;
+        chartLoader?.start(msg.interval);
+      }
+      break;
+
+    case ChartLoaderMessageKinds.Stop:
+      chartLoader?.stop();
+      break;
+
+    case ChartLoaderMessageKinds.Terminate:
+      chartLoader?.dispose();
+      chartLoader = undefined;
+      break;
   }
 }
 
@@ -128,10 +136,6 @@ class ChartLoader {
                           : storage.orderByLastModifiedDescending;
   }
 
-  public isCancelled(): boolean {
-    return (this.monitorFolderInterval === undefined);
-  }
-
   public dispose() {
     this.resetMonitorFolderTimer();
   }
@@ -146,19 +150,14 @@ class ChartLoader {
     this.resetMonitorFolderTimer();
   }
 
+  private isCancelled(): boolean {
+    return (this.monitorFolderInterval === undefined);
+  }
+
   private launchMonitorFolderTimer() {
     if (!this.isCancelled()) {
       this.monitorFolderTimer = setTimeout(() => this.monitorFolderForChanges(),
                                            this.monitorFolderInterval);
-    }
-  }
-
-  private resetMonitorFolderTimer() {
-    this.monitorFolderInterval = undefined;
-
-    if (this.monitorFolderTimer) {
-      clearTimeout(this.monitorFolderTimer);
-      this.monitorFolderTimer = undefined;
     }
   }
 
@@ -199,6 +198,15 @@ class ChartLoader {
     }
     finally {
       this.launchMonitorFolderTimer();
+    }
+  }
+
+  private resetMonitorFolderTimer() {
+    this.monitorFolderInterval = undefined;
+
+    if (this.monitorFolderTimer) {
+      clearTimeout(this.monitorFolderTimer);
+      this.monitorFolderTimer = undefined;
     }
   }
 }

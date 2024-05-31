@@ -73,9 +73,9 @@ function SessionsSelectPage(props: PageProperties) {
         return;
       }
 
-      window.alert(`Selected recording is ${JSON.stringify(recording)}`);
+      navigate('/sessions/id');
     },
-    []);
+    [navigate]);
 
   const finishTimestampCellRenderer = (params: CustomCellRendererProps<Recording, Date>) => (
     hasValue(params.value)
