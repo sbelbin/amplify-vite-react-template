@@ -112,7 +112,7 @@ class ChartLoader {
   private listFilesOrderBy: storage.ListFilesOrderBy;
   private monitorFolderInterval?: number;
   private monitorFolderTimer?: NodeJS.Timeout;
-  private lastModifiedTime: Date = new Date(0);
+  private lastModifiedTime: number = 0;
 
   constructor(storageClient: storage.Client,
               bucket: string,
@@ -173,7 +173,7 @@ class ChartLoader {
       const listFiles = await storage.listFilesModifiedAfter(this.storageClient,
                                                              this.bucket,
                                                              this.folder,
-                                                             this.lastModifiedTime,
+                                                             new Date(this.lastModifiedTime),
                                                              listFilesFilter,
                                                              this.listFilesOrderBy);
 
@@ -188,11 +188,10 @@ class ChartLoader {
         });
       }
 
-      const lastModifiedTimestamp =
-              Math.max(this.lastModifiedTime?.getTime() ?? 0,
+      this.lastModifiedTime =
+              Math.max(this.lastModifiedTime,
                        ...listFiles.map((file) => file.LastModified?.getTime() ?? 0));
 
-      this.lastModifiedTime = new Date(lastModifiedTimestamp);
       listFiles.forEach((file) => file.Key && this.filesLoaded.add(file.Key));
     }
     catch(error) {
