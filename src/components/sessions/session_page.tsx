@@ -1,11 +1,15 @@
-import * as storage from '../../storage';
+import * as authentication from '../../authentication';
+import * as charting from '../../charting';
+
+import { AWSCredentials } from '@aws-amplify/core/internals/utils';
 
 import {
   useEffect,
+  useMemo,
   useState
 } from 'react';
 
-// import { useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 
 import {
   Col,
@@ -23,72 +27,82 @@ interface PageProperties {
   folder: string;
 }
 
-type StatusUpdate = (message: string) => void;
-
-async function downloadFirstFile(storageRegion: string,
-                                 bucket: string,
-                                 folder: string,
-                                 statusUpdate: StatusUpdate) {
-  statusUpdate(`Connecting to the AWS S3 storage in the ${storageRegion} region.`);
-
-  const client = await storage.connect(storageRegion);
-
-  statusUpdate(`Scanning the ${bucket}'s ${folder} for files.`);
-
-  const listFiles = await storage.listFilesInFolder(client, bucket, folder);
-
-  if (listFiles.length === 0) {
-    throw new Error(`No files were found in the ${folder} from the ${bucket}.`);
-  }
-
-  const file = listFiles[0];
-
-  if (!file.Key) {
-    throw new Error(`No file path provided in the ${folder} from the ${bucket}.`);
-  }
-
-  statusUpdate(`Downloading the contents of ${file.Key}.`);
-  const dataBuffer = await storage.fetchData(client, bucket, file.Key, file.Size ?? 0);
-
-  const fileSize = dataBuffer.byteLength;
-
-  statusUpdate(`Downloaded ${fileSize} bytes of the file ${file.Key}.`);
-}
-
 function SessionPage(props: PageProperties) {
   const [errorTitle, setErrorTitle] = useState('');
   const [errorMessage, setErrorMessage] = useState('');
   const [showError, setShowError] = useState(false);
   const toggleShowError = () => setShowError(!showError);
 
-  // const navigate = useNavigate();
+  const navigate = useNavigate();
 
-  // useEffect(() => {
-  //     !props.isUserLoggedIn() && navigate('/');
-  //   },
-  //   [navigate, props]);
+  useEffect(() => {
+      // @todo - Mechanism ensuring that the session is authenticated.
+      (props.isUserLoggedIn === undefined) && navigate('/');
+    },
+    [navigate, props]);
+
+  //
+  // @todo
+  //   Make the authentication session part of the application's context, so that the chart loader
+  //   worker can be instantiated immediately.
+  //
+  const [authenticationSession, setAuthenticationSession] = useState<AWSCredentials | undefined>(undefined);
+
+  useEffect(() => {
+      authentication.sessionCredentials()
+      .then((credentials) => setAuthenticationSession(credentials));
+    },
+    [setAuthenticationSession]);
 
   const [status, setStatus] = useState('');
 
-  useEffect(() => {
-    const fn = async () => {
-        try {
-          await downloadFirstFile(props.storageRegion,
-                                  props.bucket,
-                                  props.folder,
-                                  (message: string) => setStatus(message));
-        }
-        catch(error) {
-          setErrorTitle('Failed to download the first file in folder.');
-          setErrorMessage(`${error}`);
-          setShowError(true);
-          setStatus(`Failed. Reason: ${error}`);
-        }
-      }
+  const chartLoaderWorker: Worker = useMemo(() =>
+      new Worker(new URL('../../workers/chart_loader.ts', import.meta.url), {type: 'module'}),
+    []);
 
-      fn();
+  useEffect(() => {
+      if (window.Worker && chartLoaderWorker && authenticationSession) {
+        chartLoaderWorker.onmessage = (event: MessageEvent<charting.chart_loader.ResponseMessage>) => {
+          const msg = event.data as charting.chart_loader.ResponseMessage;
+
+          switch (msg.kind) {
+            case charting.chart_loader.KindResponseMessage.DataPayloadReady:
+              setStatus(`Fetched the segment '${msg.filePath}' that had ${msg.dataPayload.byteLength} bytes.`);
+              break;
+          }
+        };
+
+        chartLoaderWorker.onerror = (event: ErrorEvent) => {
+          setErrorTitle('Failed to download an EEG segment.');
+          setErrorMessage(`${event.error}`);
+          setShowError(true);
+          setStatus(`Failed. Reason: ${event.error}`);
+        }
+
+        chartLoaderWorker.postMessage({
+          kind: charting.chart_loader.KindEventMessage.Initialize,
+          storageRegion: 'us-east-1',
+          storageCredentials: authenticationSession,
+          bucket: 'veegix8iosdev140644-dev',
+          folder: 'recordings/sbelbin/2024-05-09T201117.125Z/data/',
+          filesLoaded: [],
+          loadSequence: charting.chart_loader.LoadSequence.Latest
+        });
+
+        chartLoaderWorker.postMessage({
+          kind: charting.chart_loader.KindEventMessage.Start,
+          interval: 1000
+        });
+      }
     },
-    [props, setStatus, setErrorTitle, setErrorMessage, setShowError]);
+    [
+      authenticationSession,
+      chartLoaderWorker,
+      setStatus,
+      setErrorTitle,
+      setErrorMessage,
+      setShowError
+    ]);
 
   return (
     <Container>

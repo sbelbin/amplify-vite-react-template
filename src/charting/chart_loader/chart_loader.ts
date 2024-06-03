@@ -116,15 +116,14 @@ export class ChartLoader {
           return;
         }
 
+        this.filesLoaded.add(file.Key!);
+        this.lastModifiedTime = Math.max(this.lastModifiedTime, file.LastModified?.getTime() ?? 0);
+
         storage.fetchData(this.storageClient, this.bucket, file.Key!, file.Size!)
-        .then((dataPayload) => this.onDataPayloadReady(dataPayload));
+        .then((dataPayload) => {
+          this.onDataPayloadReady({ filePath: file.Key!, dataPayload: dataPayload });
+        });
       }
-
-      this.lastModifiedTime =
-              Math.max(this.lastModifiedTime,
-                       ...listFiles.map((file) => file.LastModified?.getTime() ?? 0));
-
-      listFiles.forEach((file) => file.Key && this.filesLoaded.add(file.Key));
     }
     catch(error) {
       console.error(`Failed to monitor for changes on the folder. Reason: ${error}`);

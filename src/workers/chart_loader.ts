@@ -12,10 +12,11 @@ self.onmessage = (event: MessageEvent<chart_loader.EventMessage>) => {
       {
         chartLoader?.dispose();
 
-        const onDataPayloadReady = (dataPayload: ArrayBuffer) => {
+        const onDataPayloadReady = (response: chart_loader.DataPayloadReady) => {
           self.postMessage({
-            kind: 'edf_payload',
-            dataPayload: dataPayload
+            kind: chart_loader.KindResponseMessage.DataPayloadReady,
+            filePath: response.filePath,
+            dataPayload: response.dataPayload
           });
         };
 

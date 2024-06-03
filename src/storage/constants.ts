@@ -16,7 +16,7 @@ const compareLastModified = (lhs: File, rhs: File, isDescending: boolean) => {
   const comparison = lhsLastModified - rhsLastModified;
 
   return isDescending
-       ? -comparison
+       ? comparison * -1
        : comparison;
 }
 
