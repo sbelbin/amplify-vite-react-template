@@ -5,15 +5,15 @@ export const enum LoadSequence {
   Latest = 'latest'
 }
 
-export const enum KindEventMessage {
+export const enum KindRequestMessage {
   Initialize = 'initialize',
   Start = 'start',
   Stop = 'stop',
   Terminate = 'terminate'
 }
 
-export interface InitializeEventMessage {
-  kind: KindEventMessage.Initialize;
+export interface InitializeRequestMessage {
+  kind: KindRequestMessage.Initialize;
   storageRegion: string;
   storageCredentials?: AwsCredentialIdentity;
   bucket: string;
@@ -22,20 +22,20 @@ export interface InitializeEventMessage {
   loadSequence: LoadSequence;
 }
 
-export interface StartEventMessage {
-  kind: KindEventMessage.Start;
+export interface StartRequestMessage {
+  kind: KindRequestMessage.Start;
   interval: number;
 }
 
-export interface StopEventMessage {
-  kind: KindEventMessage.Stop;
+export interface StopRequestMessage {
+  kind: KindRequestMessage.Stop;
 }
 
-export interface TerminateEventMessage {
-  kind: KindEventMessage.Terminate;
+export interface TerminateRequestMessage {
+  kind: KindRequestMessage.Terminate;
 }
 
-export type EventMessage = InitializeEventMessage | StartEventMessage | StopEventMessage | TerminateEventMessage;
+export type RequestMessage = InitializeRequestMessage | StartRequestMessage | StopRequestMessage | TerminateRequestMessage;
 
 /**
  * A response from the chart loader to indicate that a data payload has fetched from the storage

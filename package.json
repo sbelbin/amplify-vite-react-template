@@ -25,7 +25,9 @@
     "react-bootstrap": "^2.10.2",
     "react-dom": "^18.2.0",
     "react-router": "^6.23.1",
-    "react-router-dom": "^6.23.1"
+    "react-router-dom": "^6.23.1",
+    "scichart": "^3.3.592",
+    "scichart-react": "^0.1.8"
   },
   "devDependencies": {
     "@aws-amplify/backend": "^1.0.0",

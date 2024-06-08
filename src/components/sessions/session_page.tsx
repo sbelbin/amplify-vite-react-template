@@ -20,6 +20,18 @@ import {
   ToastContainer
 } from 'react-bootstrap';
 
+import {
+  EAutoRange,
+  EAxisType,
+  EThemeProviderType,
+  NumberRange,
+  XyDataSeries,
+  XyScatterRenderableSeries,
+  chartBuilder
+} from "scichart";
+
+import { SciChartReact } from "scichart-react";
+
 interface PageProperties {
   isUserLoggedIn: () => boolean;
   storageRegion: string;
@@ -80,7 +92,7 @@ function SessionPage(props: PageProperties) {
         }
 
         chartLoaderWorker.postMessage({
-          kind: charting.chart_loader.KindEventMessage.Initialize,
+          kind: charting.chart_loader.KindRequestMessage.Initialize,
           storageRegion: 'us-east-1',
           storageCredentials: authenticationSession,
           bucket: 'veegix8iosdev140644-dev',
@@ -90,7 +102,7 @@ function SessionPage(props: PageProperties) {
         });
 
         chartLoaderWorker.postMessage({
-          kind: charting.chart_loader.KindEventMessage.Start,
+          kind: charting.chart_loader.KindRequestMessage.Start,
           interval: 1000
         });
       }
@@ -103,6 +115,58 @@ function SessionPage(props: PageProperties) {
       setErrorMessage,
       setShowError
     ]);
+
+  const initChart = async (rootElement) => {
+    const createChart = async () => {
+      // for demonstration purposes, here we have used Builder API explicitly
+      const { sciChartSurface } = await chartBuilder.build2DChart(rootElement, {
+        xAxes: {
+          type: EAxisType.NumericAxis,
+          options: {
+            autoRange: EAutoRange.Once,
+            growBy: new NumberRange(0.2, 0.2),
+          },
+        },
+        yAxes: {
+          type: EAxisType.NumericAxis,
+          options: { autoRange: EAutoRange.Never },
+        },
+        surface: {
+          theme: { type: EThemeProviderType.Dark },
+          title: "Scatter Chart",
+          titleStyle: {
+            fontSize: 20,
+          },
+        },
+      });
+
+      return sciChartSurface;
+    };
+
+    // a function that simulates an async data fetching
+    const getData = async () => {
+      await new Promise((resolve) => {
+        setTimeout(() => resolve({}), 1500);
+      });
+
+      return { xValues: [0, 1, 2, 3, 4], yValues: [3, 6, 1, 5, 2] };
+    };
+
+    const [sciChartSurface, data] = await Promise.all([createChart(), getData()]);
+
+    const wasmContext = sciChartSurface.webAssemblyContext2D;
+
+    sciChartSurface.renderableSeries.add(
+      new XyScatterRenderableSeries(wasmContext, {
+        dataSeries: new XyDataSeries(wasmContext, {
+          ...data,
+        }),
+        strokeThickness: 4,
+        stroke: "#216939",
+      })
+    );
+    return { sciChartSurface };
+  };
 
   return (
     <Container>
@@ -135,6 +199,15 @@ function SessionPage(props: PageProperties) {
         <div>
           {status}
         </div>
+        <SciChartReact
+          style={{ width: 400, height: 300 }}
+          fallback={
+            <div className="fallback">
+              <div>Data fetching & Chart Initialization in progress</div>
+            </div>
+          }
+          initChart={initChart}
+        />
       </Stack>
     </Container>
   );

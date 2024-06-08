@@ -2,7 +2,7 @@ import fetchRecordings from '../../models/recordings/fetch_recordings';
 import Recording from '../../models/recordings/recording';
 
 import dateOrNow from '../../utilities/date_time/date_or_now';
-import formatDuration from '../../utilities/date_time/format_duration';
+import { formatDateRangeDuration } from '../../utilities/duration/format_duration';
 import { formatOptionalTimestamp, formatTimestamp } from '../../utilities/date_time/format_timestamp';
 import hasValue from '../../utilities/optional/has_value';
 
@@ -94,8 +94,10 @@ function SessionsSelectPage(props: PageProperties) {
 
   const durationCellRenderer = (params: CustomCellRendererProps<Recording, number>) => (
     hasValue(params.node.data?.startTimestamp) &&
-    formatDuration(params.node.data!.startTimestamp,
-                   dateOrNow(params.node.data!.finishTimestamp))
+    formatDateRangeDuration({
+      min: params.node.data!.startTimestamp,
+      max: dateOrNow(params.node.data!.finishTimestamp)
+    })
   );
 
   const [rows, setRows] = useState<Recording[]>([]);

@@ -15,3 +15,7 @@ export function formatOptionalTimestamp(timestamp: Date | null | undefined): str
        ? formatTimestamp(timestamp!)
        : undefined;
 }
+
+export function formatTimestampToISOString(timestamp: number) {
+  return new Date(Math.ceil(timestamp)).toISOString();
+}
