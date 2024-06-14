@@ -1,2 +1,2 @@
 export * from './activate_license';
-export * from './chart';
+export * from './chart_view';

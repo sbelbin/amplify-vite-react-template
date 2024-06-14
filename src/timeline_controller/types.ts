@@ -1,37 +1,50 @@
+import * as date_time from '../utilities/date_time';
+import * as duration from '../utilities/duration';
+
+export type SourceId = number;
+
 export type RestorePlayback = () => void;
+
+export interface ChangeCurrentTime {
+  timeOffset: duration.Duration;
+  timePoint: date_time.TimePoint;
+}
 
 /**
  * Event indicating a change to the chart's current time-offset and point-in-time.
  */
-export interface ChangeCurrentTimeEvent {
-  timeOffset: number;
-  timePoint: number;
+export interface ChangeCurrentTimeEvent extends ChangeCurrentTime {
+  sourceId: SourceId;
 }
 
-export type OnChangeCurrentTimeEvent = (event: ChangeCurrentTimeEvent) => void;
-
 export interface ITimelineController {
-  startChartTimelineNavigation(): RestorePlayback;
+  get timeRange(): date_time.TimePointRange;
+
+  get currentTime(): date_time.TimePoint;
+  set currentTimeOffset(timeOffset: duration.Duration);
+
+  startTimelineNavigation(sourceId: SourceId): RestorePlayback;
+
+  onChangeCurrentTime(event: ChangeCurrentTimeEvent): void;
 }
 
 export interface ITimelineChartController {
-  get currentTimePoint(): number;
-  set currentTimePoint(timePoint: number);
+  readonly sourceId: SourceId;
 
-  get currentTimeOffset(): number;
-  set currentTimeOffset(timeOffset: number);
+  get currentTime(): date_time.TimePoint;
+  set currentTime(timePoint: date_time.TimePoint);
 
-  get startTimePoint(): number;
-  get finishTimePoint(): number;
+  get currentTimeOffset(): duration.Duration;
+  set currentTimeOffset(timeOffset: duration.Duration);
+
+  get remainingTimeOffset(): duration.Duration;
+
+  get startTime(): date_time.TimePoint;
+  get finishTime(): date_time.TimePoint;
 
   get isReadyForPlayback(): boolean;
 
-  bindTimelineController(timeLineController: ITimelineController): void;
-
-  subscribeToTimelineChanges(callback: OnChangeCurrentTimeEvent): void;
-  unsubscribeToTimelineChanges(callback: OnChangeCurrentTimeEvent): void;
-
-  shiftCurrentTimePoint(shiftAmount: number): void;
+  shiftCurrentTime(shiftAmount: duration.Duration): ChangeCurrentTime;
 }
 
 //

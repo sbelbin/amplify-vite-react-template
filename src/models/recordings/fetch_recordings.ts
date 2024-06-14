@@ -28,8 +28,8 @@ async function fetchRecordings() : Promise<Recording[]> {
     instituteId: recording.instituteId,
     sessionId: recording.sessionId,
     patientId: recording.patientId,
-    startTimestamp: parseDate(recording.startTimestamp),
-    finishTimestamp: parseOptionalDate(recording.finishTimestamp),
+    startTime: parseDate(recording.startTimestamp),
+    finishTime: parseOptionalDate(recording.finishTimestamp),
     localTimeZone: recording.localTimeZone,
     isLiveFeed: !hasValue(recording.finishTimestamp)
   }));

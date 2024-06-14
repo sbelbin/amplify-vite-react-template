@@ -1,4 +1,7 @@
-import * as timeline_controller from '../../timeline_controller';
+import {
+  IChartViewTimelineNavigation,
+  RestoreTimelineNavigationBehavior
+} from './types';
 
 import {
   OverviewRangeSelectionModifier,
@@ -6,24 +9,23 @@ import {
 } from 'scichart';
 
 export class TimelineOverviewModifier extends OverviewRangeSelectionModifier {
-  private readonly timelineController: timeline_controller.ITimelineController;
-  private onRestorePlayback: timeline_controller.RestorePlayback | undefined;
+  private readonly timelineNavigation: IChartViewTimelineNavigation;
+  private readonly restoreTimelineNavigationBehavior = RestoreTimelineNavigationBehavior.Deferred;
 
-  constructor(timelineController: timeline_controller.ITimelineController) {
+  constructor(timelineNavigation: IChartViewTimelineNavigation) {
     super();
     this.receiveHandledEvents = true;
-    this.timelineController = timelineController;
+    this.timelineNavigation = timelineNavigation;
   }
 
   modifierMouseDown(args: ModifierMouseArgs): void {
     super.modifierMouseDown(args);
-    this.onRestorePlayback = this.timelineController.startChartTimelineNavigation();
+    this.timelineNavigation.startTimelineNavigation();
   }
 
   modifierMouseUp(args: ModifierMouseArgs): void {
     super.modifierMouseUp(args);
-    this.onRestorePlayback?.();
-    this.onRestorePlayback = undefined;
+    this.timelineNavigation.stopTimelineNavigation(this.restoreTimelineNavigationBehavior);
   }
 
   modifierMouseWheel(args: ModifierMouseArgs): void {
@@ -42,8 +44,8 @@ export class TimelineOverviewModifier extends OverviewRangeSelectionModifier {
 
   scopedChartTimelineNavigation(args: ModifierMouseArgs,
                                 action: (args: ModifierMouseArgs) => void) {
-    const onRestorePlayback = this.timelineController?.startChartTimelineNavigation();
+    this.timelineNavigation.startTimelineNavigation();
     action(args);
-    onRestorePlayback();
+    this.timelineNavigation.stopTimelineNavigation(this.restoreTimelineNavigationBehavior);
   }
 }

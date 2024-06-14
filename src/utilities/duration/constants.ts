@@ -1,6 +1,6 @@
 /**
- * Represents the conversion matrix for a timestamp unit (i.e. Date.getTime()) which is in
- * milliseconds to another unit of time.
+ * Represents the conversion matrix for a point-in-time unit (i.e. Date.getTime()) which is in
+ * milliseconds to other units.
  */
 export enum TimeUnits {
   Base        = 1,

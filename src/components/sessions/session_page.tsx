@@ -30,7 +30,7 @@ import {
   chartBuilder
 } from "scichart";
 
-import { SciChartReact } from "scichart-react";
+import { SciChartNestedOverview, SciChartReact } from "scichart-react";
 
 interface PageProperties {
   isUserLoggedIn: () => boolean;
@@ -207,7 +207,9 @@ function SessionPage(props: PageProperties) {
             </div>
           }
           initChart={initChart}
-        />
+        >
+          <SciChartNestedOverview />
+        </SciChartReact>
       </Stack>
     </Container>
   );

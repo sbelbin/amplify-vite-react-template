@@ -77,7 +77,7 @@ function SessionsSelectPage(props: PageProperties) {
     },
     [navigate]);
 
-  const finishTimestampCellRenderer = (params: CustomCellRendererProps<Recording, Date>) => (
+  const finishTimeCellRenderer = (params: CustomCellRendererProps<Recording, Date>) => (
     hasValue(params.value)
     ? formatTimestamp(params.value!)
     : (
@@ -93,10 +93,10 @@ function SessionsSelectPage(props: PageProperties) {
   );
 
   const durationCellRenderer = (params: CustomCellRendererProps<Recording, number>) => (
-    hasValue(params.node.data?.startTimestamp) &&
+    hasValue(params.node.data?.startTime) &&
     formatDateRangeDuration({
-      min: params.node.data!.startTimestamp,
-      max: dateOrNow(params.node.data!.finishTimestamp)
+      min: params.node.data!.startTime,
+      max: dateOrNow(params.node.data!.finishTime)
     })
   );
 
@@ -131,16 +131,16 @@ function SessionsSelectPage(props: PageProperties) {
     },
     {
       cellDataType: 'date',
-      field: 'startTimestamp',
+      field: 'startTime',
       filter: 'agDateColumnFilter',
-      headerName: 'Starting Time'
+      headerName: 'Start Time'
     },
     {
       cellDataType: 'date',
-      field: 'finishTimestamp',
+      field: 'finishTime',
       filter: 'agDateColumnFilter',
-      headerName: 'Finishing Time',
-      cellRenderer: finishTimestampCellRenderer,
+      headerName: 'Finish Time',
+      cellRenderer: finishTimeCellRenderer,
       comparator: (lhs: Date | null | undefined, rhs: Date | null | undefined) => {
         return (lhs === rhs)  ? 0
              : !hasValue(lhs) ? 1
@@ -198,10 +198,10 @@ function SessionsSelectPage(props: PageProperties) {
       return {
         sort: {
           sortModel: [
-            { colId: 'finishTimestamp', sort: 'desc' },
-            { colId: 'startTimestamp',  sort: 'desc' },
-            { colId: 'instituteId',     sort: 'asc' },
-            { colId: 'patientId',       sort: 'asc' }
+            { colId: 'finishTime',  sort: 'desc' },
+            { colId: 'startTime',   sort: 'desc' },
+            { colId: 'instituteId', sort: 'asc' },
+            { colId: 'patientId',   sort: 'asc' }
           ]
         }
       };

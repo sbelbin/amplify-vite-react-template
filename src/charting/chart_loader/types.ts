@@ -1,3 +1,5 @@
+import * as date_time from '../../utilities/date_time';
+
 import { AwsCredentialIdentity } from '@aws-sdk/types';
 
 export const enum LoadSequence {
@@ -42,7 +44,9 @@ export type RequestMessage = InitializeRequestMessage | StartRequestMessage | St
  * server.
  */
 export interface DataPayloadReady {
-  filePath: string,
+  startTime: date_time.TimePoint,
+  finishTime: date_time.TimePoint,
+
   dataPayload: ArrayBuffer
 }
 

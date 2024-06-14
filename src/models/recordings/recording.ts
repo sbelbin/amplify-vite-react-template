@@ -16,8 +16,8 @@ interface Recording {
   instituteId: string;
   patientId: string;
   sessionId: string;
-  startTimestamp: Date;
-  finishTimestamp?: Date;
+  startTime: Date;
+  finishTime?: Date;
   localTimeZone: string;
   isLiveFeed: boolean;
   data?: Data;

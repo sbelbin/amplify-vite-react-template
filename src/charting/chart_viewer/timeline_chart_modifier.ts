@@ -1,31 +1,33 @@
-import * as timeline_controller from '../../timeline_controller';
+import {
+  IChartViewTimelineNavigation,
+  RestoreTimelineNavigationBehavior
+} from './types';
 
 import {
   ChartModifierBase2D,
-  EChart2DModifierType,
   ModifierMouseArgs
 } from 'scichart';
 
 export class TimelineChartModifier extends ChartModifierBase2D {
-  readonly type: EChart2DModifierType = EChart2DModifierType.Custom;
-  private readonly timelineController: timeline_controller.ITimelineController;
-  private onRestorePlayback: timeline_controller.RestorePlayback | undefined;
+  readonly type = 'TimelineChartModifier';
 
-  constructor(timelineController: timeline_controller.ITimelineController) {
+  private readonly restoreTimelineNavigationBehavior = RestoreTimelineNavigationBehavior.Deferred;
+  private readonly timelineNavigation: IChartViewTimelineNavigation;
+
+  constructor(timelineNavigation: IChartViewTimelineNavigation) {
     super();
     this.receiveHandledEvents = true;
-    this.timelineController = timelineController;
+    this.timelineNavigation = timelineNavigation;
   }
 
   modifierMouseDown(args: ModifierMouseArgs): void {
     super.modifierMouseDown(args);
-    this.onRestorePlayback = this.timelineController.startChartTimelineNavigation();
+    this.timelineNavigation.startTimelineNavigation();
   }
 
   modifierMouseUp(args: ModifierMouseArgs): void {
     super.modifierMouseUp(args);
-    this.onRestorePlayback?.();
-    this.onRestorePlayback = undefined;
+    this.timelineNavigation.stopTimelineNavigation(this.restoreTimelineNavigationBehavior);
   }
 
   modifierMouseWheel(args: ModifierMouseArgs): void {
@@ -44,8 +46,8 @@ export class TimelineChartModifier extends ChartModifierBase2D {
 
   scopedChartTimelineNavigation(args: ModifierMouseArgs,
                                 action: (args: ModifierMouseArgs) => void) {
-    const onRestorePlayback = this.timelineController?.startChartTimelineNavigation();
+    this.timelineNavigation.startTimelineNavigation();
     action(args);
-    onRestorePlayback();
+    this.timelineNavigation.stopTimelineNavigation(this.restoreTimelineNavigationBehavior);
   }
 }

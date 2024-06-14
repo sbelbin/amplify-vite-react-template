@@ -6,43 +6,51 @@ import {
 import * as storage from '../../storage';
 
 /**
- *  This class is responsible to fetching the EEG readings of a patient's recording session that
+ *  This class is responsible to fetch the EEG readings from a patient's recording session that
  *  this stored in the cloud infrastructure and once fetched emits a message so that the chart
- *  object can incorporate those EEG readings to be viewed in the chart.
+ *  view can display those EEG readings.
  *
  *  @remarks
- *    When the recording session is that of an active live-feed, then it monitors the recording
- *    session's folder in cloud storage to detect when new files were uploaded in which it proceeds
- *    downloading the file's contents and then incorporated it into the chart.
+ *    When the recording session is a live-feed, then this chart loader monitors the recording
+ *    session's folder in cloud storage to detect when new file segments were uploaded. When it
+ *    discovers a list of newly uploaded file segments it proceeds to download the EEG readings
+ *    from each segment file so that the chart view can display those newly added EEG readings.
  *
- *    Additionally, in the scenario of a live-feed, the latest file is downloaded then it follows
- *    a descending chronological order from the most recent to the earliest.
+ *    Additionally, in the scenario of a live-feed, then this chart loaded fetches the most recent
+ *    EEG readings before those that were recorded earlier. Hence, it fetches from the current
+ *    point-in-time until the beginning of the recording session.
  *
- *    When the recording session isn't a live-feed, then it proceeds downloading the files from the
- *    the beginning of the recording session and then each subsequent files are downloaded in the
- *    chronological order of the recording session.
+ *    When the recording session is that of a completed session, then this chart loader fetches the
+ *    EEG readings starting from the beginning of the recording session and proceeds to fetch the
+ *    subsequent ones until reaching the end of the recording session.
  *
- *    Once that a file has been downloaded it isn't downloaded again nor incorporated into the
- *    chart.
+ *    Once that a given segment of EEG readings were fetched that segment won't be fetched again
+ *    and incorporated to the chart view.
  *
  *  @todo
  *    Look into changing the name of this class and folder, since in principal this class could be
  *    more general as a fetching files from the storage server and possibly caching them into the
  *    browser's cache storage.
  *
- *    Adapt this class such that it accepts to messages emitted by the chart object requesting that
- *    this class to fetch the file that represents a segment of EEG readings for a specific range
- *    interval. Here the chart manages EEG readings within a chart's viewable range limits, such as
- *    1 to 2 hours and EEG recordings that aren't within that viewable range are discarded. When
- *    the chart's viewable range changes it issues requests to this class to fetch the files that
- *    correspond to the EEG readings the revised range.
+ *    Another variation is making this into a segmented EEG readings feeder/loader instead, since
+ *    the fact that each segment consists of a file is an implementation detail that could change
+ *    such that the EEG readings are stored in a single file or as record(s) in a table.
  *
- *    Also, in the scenario of a live-feed recording session, this class would monitor the
- *    recording session's folder as to notify that new files are available, which implies that the
- *    is more recent EEG readings available. Upon getting that notification the chart can proceed
- *    to issue requests to this class as to fetch the data of any files that are within the chart's
- *    viewable range. When users are viewing an range from earlier point-in-time then nothing needs
- *    to be fetched, since those segments are part of the viewable range.
+ *    Adapt this class such that it accepts to messages emitted by the chart view requesting that
+ *    this chart loader to fetch the segments of EEG readings for a specific range interval. Since,
+ *    the chart views controls the viewable range limits, such as 1 to 2 hours, then its viewable
+ *    range is shifted forward or backwards, then the chart view discards EEG recordings that
+ *    aren't within the revised viewable range & issues request(s) to this chart loader to fetch
+ *    the segments of EEG readings only for that missing interval of the revised viewable range.
+ *
+ *    With the above adaptation of chart viewer making requests & in the live-feed scenario, this
+ *    chart loader class could notify the chart view when EEG readings were uploaded by the app
+ *    and pass a message to the chart view that the recording session has expanded. It would be
+ *    for the chart view to determine if those newly added EEG readings are within the revised
+ *    viewable range and if so then proceed to request this chart loader to fetch those EEG
+ *    readings segments. Hence, we apply a notify-pull model in which the control is managed by
+ *    the chart view to ensure that only the meaningful EEG readings are loaded in memory or
+ *    fetched from the cloud infrastructure.
  */
 export class ChartLoader {
   private storageClient: storage.Client;

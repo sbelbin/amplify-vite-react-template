@@ -33,7 +33,7 @@ export function formatDuration(duration: Duration): string {
 /**
  * Returns a textual representation for a range of two dates.
  *
- * @param from - The starting point-in-time.
+ * @param from - The start time.
  * @param until - The finishing point-in-time.
  * @returns A textual representation.
  *

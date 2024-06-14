@@ -4,13 +4,16 @@ import {
   ChangeCurrentTimeEvent,
   ITimelineChartController,
   ITimelineController,
-  OnChangeCurrentTimeEvent,
-  RestorePlayback
+  RestorePlayback,
+  SourceId
 } from './types';
+
+import * as date_time from '../utilities/date_time';
+import * as duration from '../utilities/duration';
 
 /**
  * The timeline controller synchronizes the video and chart controllers so that video shown is in
- * synchronization with the chart's current point-in-time/time offset represents the same instance.
+ * synchronization with the chart's current time/time offset represents the same instance.
  *
  * @remarks
  *   When users interact with the video controller's play/pause/rewind/forward, then this timeline
@@ -38,26 +41,19 @@ export class TimelineController implements ITimelineController
   private chart: ITimelineChartController;
 
   private playbackMode: PlaybackModes = PlaybackModes.None;
-  private playbackSynchronizationTimer: NodeJS.Timer | undefined;
+  private playbackSynchronizationTimer?: NodeJS.Timer;
   private synchronizationInterval: number = 100;
-  private chartTimelineChangesSubscription: OnChangeCurrentTimeEvent;
-  private onRestorePlayback: RestorePlayback | undefined;
+  private onRestorePlayback?: RestorePlayback;
+  private currentSourceId?: SourceId;
+  private startTime: date_time.TimePoint = 0;
+  private finishTime?: date_time.TimePoint;
+  private _currentTimeOffset: duration.Duration = 0;
 
   constructor(video: HTMLVideoElement, chart: ITimelineChartController) {
     this.video = video;
     this.chart = chart;
 
-    this.chart.bindTimelineController(this);
-
-    this.chartTimelineChangesSubscription = (event: ChangeCurrentTimeEvent) => {
-      if (!this.isVideoPlaying()) {
-        this.setVideoCurrentTimeOffset(event.timeOffset);
-      }
-    };
-
-    this.subscribeToChartTimelineChanges();
-
-    this.setVideoCurrentTimeOffset(this.chart.currentTimeOffset);
+    this.setVideoCurrentTime();
 
     if (this.video) {
       this.playbackMode = PlaybackModes.Video;
@@ -67,77 +63,86 @@ export class TimelineController implements ITimelineController
   }
 
   /**
-   * User is interacting with the chart and is about to start navigating the timeline by using
-   * the chart.
+   * ITimelineController interface
+  */
+  get timeRange(): date_time.TimePointRange {
+    return {
+              min: this.startTime,
+              max: this.finishTime ?? Date.now()
+           };
+  }
+
+  get currentTime(): date_time.TimePoint {
+    return this.startTime + this.currentTimeOffset;
+  }
+
+  /**
+   * Set the timeline controller's current time.
+   *
+   * @param timePoint - A point-in-time.
    *
    * @remarks
-   *   Once that the navigation is done invoke the provided restoration callback to restore the
-   *   timeline controller's state to what it was prior to starting the navigation using the
-   *   chart.
-   */
-  public startChartTimelineNavigation(): RestorePlayback {
-    return this.pause();
-  }
-
-  /**
-   * Subscribe to receive notifications about changes to the chart controller's current
-   * time offset/point-in-time.
-   */
-  public subscribeToChartTimelineChanges(): void {
-    this.chart.subscribeToTimelineChanges(this.chartTimelineChangesSubscription);
-  }
-
-  /**
-   * Unsubscribe from receiving notifications about changes to the chart controller's current
-   * time offset/point-in-time.
-   */
-  public unsubscribeFromChartTimelineChanges(): void {
-    this.chart.unsubscribeToTimelineChanges(this.chartTimelineChangesSubscription);
-  }
-
-  /**
-   * Set the timeline controller's current point-in-time.
-   *
-   * @param timePoint - A point-in-time (i.e timestamp).
-   *
-   * @remarks
-   *   Pause playback prior to setting the timeline controller's current point-in-time, as not to
+   *   Pause playback prior to setting the timeline controller's current time, as not to
    *   introduce a synchronization conflict between the video and chart controllers. Restore the
    *   playback state after that the specified point-in-time has been applied to both these
    *   controllers.
    */
-  public setCurrentTimePoint(timePoint: number): void {
+  public set currentTime(timePoint: date_time.TimePoint) {
     const onRestorePlayback = this.pause();
 
-    this.chart.currentTimePoint = timePoint;
+    this._currentTimeOffset = timePoint - this.startTime;
+    this.setChartCurrentTime();
+    this.setVideoCurrentTime();
 
     onRestorePlayback();
   }
 
-  /**
-   * Set the timeline controller's to the chart's starting point-in-time.
-   *
-   * @remarks
-   *   See setCurrentTimePoint.
-   *
-   * @todo:
-   *   Possibly convert this to this.setCurrentTimeOffset(0 | Start).
-   */
-  public gotoStartTimePoint(): void {
-    this.setCurrentTimePoint(this.chart.startTimePoint);
+  get currentTimeOffset(): duration.Duration {
+    return this._currentTimeOffset;
   }
 
   /**
-   * Set the timeline controller's to the chart's finishing point-in-time.
+   * User is about to manually start navigating the timeline.
    *
    * @remarks
-   *   See setCurrentTimePoint.
+   *   This can be in the form of the user is:
+   *     o interacting with the chart view as to drag the chart view's visible range
+   *     o interacting with the chart view to select a given point-in-time within the chart.
    *
-   * @todo:
-   *   Possibly convert this to this.setCurrentTimeOffset(0 | Finish).
+   *   Once that the navigation is done invoke the provided restoration callback to restore the
+   *   timeline controller's state to what it was prior to starting the navigation using the
+   *   chart.
+   *
+   * @todo
+   *   Conceptually, it would be possible to provide a controller widget allowing users to
+   *   jump to a point in time other than the video or chart view. Such as a entering a
+   *   the point-in-time from a calendar or clock controls.
    */
-  public gotoFinishTimePoint(): void {
-    this.setCurrentTimePoint(this.chart.finishTimePoint);
+  public startTimelineNavigation(sourceId: SourceId): RestorePlayback {
+    const restorePlayback = this.pause();
+    this.currentSourceId = sourceId;
+    return restorePlayback;
+  }
+
+  public onChangeCurrentTime(event: ChangeCurrentTimeEvent) {
+    if (!this.isVideoPlaying()) {
+      this._currentTimeOffset = event.timeOffset;
+      this.setVideoCurrentTime();
+    }
+  }
+
+  /**
+   * Set the timeline controller's to the chart's start time.
+   */
+  public gotoStartTime(): void {
+    this.currentTime = this.startTime;
+  }
+
+  /**
+   * Set the timeline controller's to the chart's finish time.
+   */
+  public gotoFinishTime(): void {
+    this.currentTime = this.finishTime ?? Date.now();
   }
 
   /**
@@ -148,7 +153,8 @@ export class TimelineController implements ITimelineController
    *   to determine if the chart controller is playing or paused state.
    */
   public isPlaying(): boolean {
-    return ((this.playbackMode & PlaybackModes.Video) !== 0) && this.isVideoPlaying();
+    return ((this.playbackMode & PlaybackModes.Video) !== 0)
+        && this.isVideoPlaying();
   }
 
   /**
@@ -183,9 +189,11 @@ export class TimelineController implements ITimelineController
    */
   public pause(state: SuspendPlaybackState = SuspendPlaybackState.On): RestorePlayback {
     const isPlaying = this.isPlaying();
+    const sourceId = this.currentSourceId;
 
     if (!isPlaying) {
       return () => {
+        this.currentSourceId = sourceId;
         this.playbackMode ^= this.playbackMode & state;
       }
     }
@@ -194,6 +202,7 @@ export class TimelineController implements ITimelineController
     this.pauseVideo();
 
     return () => {
+             this.currentSourceId = sourceId;
              this.resume();
              this.playbackMode ^= this.playbackMode & state;
            };
@@ -204,7 +213,7 @@ export class TimelineController implements ITimelineController
    *
    * @remarks
    *   If the video controller is the source feed then playback is relative to the video's
-   *   controller current point-in-time (ie. current time).
+   *   controller current time (ie. current time).
    */
   public resume(): void {
     if (this.playbackMode !== PlaybackModes.None) {
@@ -232,19 +241,18 @@ export class TimelineController implements ITimelineController
 
     switch (this.playbackMode) {
       case PlaybackModes.Video:
-        this.setChartCurrentTimeOffset(this.video.currentTime * 1000);
+        this._currentTimeOffset = this.video.currentTime * 1000;
+        this.setChartCurrentTime();
         break;
 
       case PlaybackModes.Chart:
-        this.chart.shiftCurrentTimePoint(this.synchronizationInterval);
+        this.chart.shiftCurrentTime(this.synchronizationInterval);
         break;
     }
   }
 
   /**
-   * Synchronizes the video controller's current time offset with that of the timeline controller.
-   *
-   * @param timeOffset - Time offset.
+   * Synchronizes the video view's current time with that of the timeline controller.
    *
    * @remarks
    *   The has the effect of seeking to that time offset within the video stream such that as the
@@ -252,16 +260,14 @@ export class TimelineController implements ITimelineController
    *   frames while they are navigating. This effect is desirable since it allows users to observe
    *   the patient where they might choose to resume from that moment or skip it.
    */
-  private setVideoCurrentTimeOffset(timeOffset: number): void {
+  private setVideoCurrentTime(): void {
     if (this.video) {
-      this.video.currentTime = timeOffset / 1000;
+      this.video.currentTime = this.currentTimeOffset / 1000;
     }
   }
 
   /**
-   * Synchronizes the chart controller's current time offset with that of the timeline controller.
-   *
-   * @param timeOffset - Time offset.
+   * Synchronizes the chart controller's current time with that of the timeline controller.
    *
    * @remarks
    *   Should the chart's indicates that it isn't ready for playback, then pause playback without
@@ -278,8 +284,8 @@ export class TimelineController implements ITimelineController
    *   playing state so that if users were to navigate to another moment (i.e. earlier moment) in
    *   which that feed is accessible, then playback resume from that chosen moment.
    */
-  private setChartCurrentTimeOffset(timeOffset: number): void {
-    this.chart.currentTimeOffset = timeOffset;
+  private setChartCurrentTime(): void {
+    this.chart.currentTime = this.currentTime;
 
     if (this.chart.isReadyForPlayback) {
       this.onRestorePlayback?.();
@@ -298,11 +304,11 @@ export class TimelineController implements ITimelineController
    *
    * @remarks
    *   If the video controller is the source feed then playback is relative to the video's
-   *   controller current point-in-time (ie. current time).
+   *   controller current time (ie. current time).
    */
-  private isVideoPaused(): boolean {
-    return this.video?.paused ?? true;
-  }
+  // private isVideoPaused(): boolean {
+  //   return this.video?.paused ?? true;
+  // }
 
   /**
    * Determine if the video controller is in a playing state.
