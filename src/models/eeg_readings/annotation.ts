@@ -1,7 +1,7 @@
-import * as date_time from '../../utilities/date_time';
+import { TimePointRange } from '../../utilities/date_time';
 
 export interface Annotation {
-  timePointRange: date_time.TimePointRange;
+  timeRange: TimePointRange;
   notes: Array<string>
 }
 

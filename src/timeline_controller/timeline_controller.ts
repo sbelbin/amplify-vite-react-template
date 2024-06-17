@@ -37,29 +37,31 @@ import * as duration from '../utilities/duration';
  */
 export class TimelineController implements ITimelineController
 {
-  private video: HTMLVideoElement;
-  private chart: ITimelineChartController;
+  private readonly startTime: date_time.TimePoint;
+  private finishTime?: date_time.TimePoint;
+  private _currentTimeOffset: duration.Duration = 0;
+
+  private currentSourceId?: SourceId;
+  private video?: HTMLVideoElement;
+  private chart?: ITimelineChartController;
 
   private playbackMode: PlaybackModes = PlaybackModes.None;
   private playbackSynchronizationTimer?: NodeJS.Timer;
   private synchronizationInterval: number = 100;
   private onRestorePlayback?: RestorePlayback;
-  private currentSourceId?: SourceId;
-  private startTime: date_time.TimePoint = 0;
-  private finishTime?: date_time.TimePoint;
-  private _currentTimeOffset: duration.Duration = 0;
 
-  constructor(video: HTMLVideoElement, chart: ITimelineChartController) {
-    this.video = video;
-    this.chart = chart;
+  constructor(startTime: date_time.TimePoint,
+              finishTime: date_time.TimePoint | undefined,
+              referenceTime: date_time.TimePoint) {
+    this.startTime = startTime;
+    this.finishTime = finishTime;
 
-    this.setVideoCurrentTime();
+    const endTime = this.finishTime ?? Date.now();
+    const time = (referenceTime < this.startTime) ? this.startTime
+               : (referenceTime > endTime)        ? endTime
+               : referenceTime;
 
-    if (this.video) {
-      this.playbackMode = PlaybackModes.Video;
-    }
-
-    this.resume();
+    this._currentTimeOffset = time - this.startTime;
   }
 
   /**
@@ -99,6 +101,30 @@ export class TimelineController implements ITimelineController
 
   get currentTimeOffset(): duration.Duration {
     return this._currentTimeOffset;
+  }
+
+  addChart(chart: ITimelineChartController): void {
+    this.chart = chart;
+  }
+
+  removeChart(chart: ITimelineChartController): void {
+    if (this.chart && chart.sourceId === this.chart.sourceId) {
+      this.chart = undefined;
+    }
+  }
+
+  addVideo(video: HTMLVideoElement): void {
+    this.video = video;
+
+    this.setVideoCurrentTime();
+    this.playbackMode = PlaybackModes.Video;
+    this.resume();
+  }
+
+  removeVideo(video: HTMLVideoElement): void {
+    if (this.video && video.src === this.video.src) {
+      this.video = undefined;
+    }
   }
 
   /**
@@ -241,12 +267,12 @@ export class TimelineController implements ITimelineController
 
     switch (this.playbackMode) {
       case PlaybackModes.Video:
-        this._currentTimeOffset = this.video.currentTime * 1000;
+        this._currentTimeOffset = duration.secondsToDuration(this.video?.currentTime ?? 0);
         this.setChartCurrentTime();
         break;
 
       case PlaybackModes.Chart:
-        this.chart.shiftCurrentTime(this.synchronizationInterval);
+        this.chart?.shiftCurrentTime(this.synchronizationInterval);
         break;
     }
   }
@@ -262,7 +288,7 @@ export class TimelineController implements ITimelineController
    */
   private setVideoCurrentTime(): void {
     if (this.video) {
-      this.video.currentTime = this.currentTimeOffset / 1000;
+      this.video.currentTime = duration.durationToSeconds(this.currentTimeOffset);
     }
   }
 
@@ -285,9 +311,11 @@ export class TimelineController implements ITimelineController
    *   which that feed is accessible, then playback resume from that chosen moment.
    */
   private setChartCurrentTime(): void {
-    this.chart.currentTime = this.currentTime;
+    if (this.chart) {
+      this.chart.currentTime = this.currentTime;
+    }
 
-    if (this.chart.isReadyForPlayback) {
+    if (this.chart?.isReadyForPlayback) {
       this.onRestorePlayback?.();
       this.onRestorePlayback = undefined;
     }
@@ -326,7 +354,7 @@ export class TimelineController implements ITimelineController
   */
   private isVideoPlaying(): boolean
   {
-    return (this.video &&
+    return (this.video !== undefined &&
             this.video.currentTime > 0 &&
             !this.video.paused &&
             !this.video.ended &&

@@ -1,42 +1,51 @@
-import * as chart_loader from '../charting/chart_loader';
+import {
+  ChartDataSource,
+  KindRequestMessage,
+  KindResponseMessage,
+  RequestMessage
+} from '../chart/data_source';
+
+import * as eeg_readings from '../models/eeg_readings'
 
 import * as storage from '../storage';
 
-let chartLoader: chart_loader.ChartLoader | undefined;
+let chartDataSource: ChartDataSource | undefined;
 
-self.onmessage = (event: MessageEvent<chart_loader.RequestMessage>) => {
-  const msg = event.data as chart_loader.RequestMessage;
+self.onmessage = (event: MessageEvent<RequestMessage>) => {
+  const msg = event.data as RequestMessage;
 
   switch (msg.kind) {
-    case chart_loader.KindRequestMessage.Initialize:
+    case KindRequestMessage.Initialize:
       {
-        chartLoader?.dispose();
+        chartDataSource?.dispose();
 
-        const onDataPayloadReady = (response: chart_loader.DataPayloadReady) => {
+        const onDefinitionsReady = (definitions: eeg_readings.SignalDefinitions) =>
           self.postMessage(
-            Object.assign(response, { kind: chart_loader.KindResponseMessage.DataPayloadReady }));
-        };
+            Object.assign(definitions, { kind: KindResponseMessage.DefinitionsReady }));
 
-        chartLoader = new chart_loader.ChartLoader(storage.connectWithCredentials(msg.storageRegion, msg.storageCredentials),
-                                                   msg.bucket,
-                                                   msg.folder,
-                                                   onDataPayloadReady,
-                                                   new Set(msg.filesLoaded),
-                                                   msg.loadSequence);
+        const onSegmentReady = (segment: eeg_readings.Segment) =>
+          self.postMessage(
+            Object.assign(segment, { kind: KindResponseMessage.SegmentReady }));
+
+        chartDataSource = new ChartDataSource(storage.connectWithCredentials(msg.folderDetails.region, msg.storageCredentials),
+                                              msg.folderDetails,
+                                              onDefinitionsReady,
+                                              onSegmentReady,
+                                              msg.loadSequence);
       }
       break;
 
-    case chart_loader.KindRequestMessage.Start:
-      chartLoader?.start(msg.interval);
+    case KindRequestMessage.Start:
+      chartDataSource?.start(msg.interval);
       break;
 
-    case chart_loader.KindRequestMessage.Stop:
-      chartLoader?.stop();
+    case KindRequestMessage.Stop:
+      chartDataSource?.stop();
       break;
 
-    case chart_loader.KindRequestMessage.Terminate:
-      chartLoader?.dispose();
-      chartLoader = undefined;
+    case KindRequestMessage.Dispose:
+      chartDataSource?.dispose();
+      chartDataSource = undefined;
       break;
   }
 }

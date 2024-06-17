@@ -14,3 +14,11 @@ export interface UnboundedRange<T> {
   min?: T;
   max?: T;
 }
+
+export function diff<T extends number>(range: Range<T>): number {
+  return range.max - range.min;
+}
+
+export function dateRangeDiff<T extends Date>(range: Range<T>): number {
+  return range.max.getTime() - range.min.getTime();
+}

@@ -49,7 +49,17 @@ import { TSciChart } from 'scichart/types/TSciChart';
 import { createImageAsync } from 'scichart/utils/imageUtil';
 
 /**
- * The chart view
+ * The chart view are the the readings displayed to users for a given interval range of time.
+ *
+ * @remarks
+ *   This chart view relies on SciChart.js which provides the U/X charting capabilities required
+ *   to present users with the readings which includes interactivity capabilities such as scrolling
+ *   zooming, and panning.
+ *
+ *   Additionally, this chart view coordinates with a timeline controller so that the time
+ *   controller can ensure that this chart view and video view are in sync with the point-in-time
+ *   that is presented to users. Such that the readings for the chart's current point-in-time
+ *   corresponds to that in the video view.
  */
 export class ChartView implements timeline_controller.ITimelineChartController,
                                   IChartViewTimelineNavigation {
@@ -75,15 +85,15 @@ export class ChartView implements timeline_controller.ITimelineChartController,
       this.onTimelineVisibleRangeChanged(args));
 
     this.timelineIndicator = new VerticalLineAnnotation({
-                                     axisLabelFill: "#f3fa2a",
-                                     axisFontSize: 30,
-                                     labelPlacement: ELabelPlacement.Top,
-                                     showLabel: true,
-                                     stroke: "#f3fa2a",
-                                     strokeThickness: 5,
-                                     xAxisId: this.timelineAxis.id,
-                                     x1: this.timelineController.currentTime
-                                  });
+                                   axisLabelFill: "#f3fa2a",
+                                   axisFontSize: 30,
+                                   labelPlacement: ELabelPlacement.Top,
+                                   showLabel: true,
+                                   stroke: "#f3fa2a",
+                                   strokeThickness: 5,
+                                   xAxisId: this.timelineAxis.id,
+                                   x1: this.timelineController.currentTime
+                                 });
 
     this.chart.sciChartSurface.xAxes.add(this.timelineAxis);
     this.chart.sciChartSurface.annotations.add(this.timelineIndicator);
@@ -131,6 +141,8 @@ export class ChartView implements timeline_controller.ITimelineChartController,
         theme: new SciChartJsNavyTheme()
       }
     );
+
+    this.timelineController.addChart(this);
   }
 
   //
@@ -170,7 +182,7 @@ export class ChartView implements timeline_controller.ITimelineChartController,
                                         // horizontalAnchorPoint: EHorizontalAnchorPoint.Left,
                                         // verticalAnchorPoint: EVerticalAnchorPoint.Top,
                                         xAxisId: this.timelineAxis.id,
-                                        x1: annotation.timePointRange.min
+                                        x1: annotation.timeRange.min
                                     });
 
         console.debug(`Added the note of ${note}.`);
@@ -195,19 +207,23 @@ export class ChartView implements timeline_controller.ITimelineChartController,
     });
   }
 
-  public addDefinitions(definitions: eeg_readings.SignalDefinitions): void {
-    definitions.forEach((definition) => addDefinition(this.chart, definition));
+  /**
+   *
+   * @param definitions - The definitions
+   */
+  public loadDefinitions(definitions: eeg_readings.SignalDefinitions): void {
+    definitions.forEach((definition) => loadDefinition(this.chart, definition));
   }
 
   public loadSegment(segment: eeg_readings.Segment) {
-    segment.signalSamples.forEach((sample) => {
+    segment.samples.forEach((sample) => {
       const dataSeries = findDataSeries(this.chart.sciChartSurface, sample.signalId);
 
       if (dataSeries) {
-        if (!dataSeries.hasValues || dataSeries.xRange.max <= segment.timeRange.min) {
+        if (!dataSeries.hasValues || dataSeries.xRange.max < segment.timeRange.min) {
           dataSeries.appendRange(sample.timePoints, sample.values);
         }
-        else if (dataSeries.xRange.min >= segment.timeRange.max) {
+        else if (dataSeries.xRange.min > segment.timeRange.max) {
           dataSeries.insertRange(0, sample.timePoints, sample.values);
         }
       }
@@ -390,10 +406,10 @@ export class ChartView implements timeline_controller.ITimelineChartController,
    *   introduce gaps once we add a mechanism to unload a leading or trailing segments.
   */
   private isTimePointLoaded(timePoint: date_time.TimePoint): boolean {
-    const timePointRange = this.timelineAxis.getMaximumRange();
+    const timeRange = this.timelineAxis.getMaximumRange();
 
-    return (timePoint >= timePointRange.min &&
-            timePoint <  timePointRange.max);
+    return (timePoint >= timeRange.min &&
+            timePoint <= timeRange.max);
   }
 
   /**
@@ -495,7 +511,7 @@ function makeTimelineRangeWindow(rangeDuration: duration.Duration = duration.min
 }
 
 function makeTimelineAxis(wasmContext: TSciChart,
-                          timePointRange: date_time.TimePointRange,
+                          timeRange: date_time.TimePointRange,
                           viewDuration: duration.Duration = duration.secondsToDuration(30)) : NumericAxis {
   return new NumericAxis(
                wasmContext,
@@ -503,16 +519,16 @@ function makeTimelineAxis(wasmContext: TSciChart,
                  id: "timeline",
                  autoRange: EAutoRange.Never,
                  axisAlignment: EAxisAlignment.Top,
-                 axisTitle: "",
+                 axisTitle: '',
                  autoTicks: false,
                  labelProvider: new TimelineLabelProvider(),
                  majorDelta: duration.minutesToDuration(1),
                  majorGridLineStyle: { strokeThickness: 2, color: '#F3FA2A' },
                  minorDelta: duration.secondsToDuration(1),
                  minorGridLineStyle: { strokeThickness: 2, color: '#050505' },
-                 visibleRange: makeTimelineRangeWithDuration(timePointRange.min, viewDuration),
+                 visibleRange: makeTimelineRangeWithDuration(timeRange.min, viewDuration),
                  visibleRangeSizeLimit: makeTimelineRangeWindow(viewDuration),
-                 visibleRangeLimit: new NumberRange(timePointRange.min, timePointRange.max)
+                 visibleRangeLimit: new NumberRange(timeRange.min, timeRange.max)
                }
              );
 }
@@ -535,7 +551,7 @@ function makeGraphSeparator(timelineAxisId: string,
   return separator;
 }
 
-function addDefinition(chart: TWebAssemblyChart,
+function loadDefinition(chart: TWebAssemblyChart,
                        definition: eeg_readings.SignalDefinition): void {
   const physicalDistance = definition.physicalRange.max - definition.physicalRange.min;
   const physicalMidpoint = definition.physicalRange.min + (physicalDistance / 2);
@@ -546,7 +562,7 @@ function addDefinition(chart: TWebAssemblyChart,
             chart.wasmContext,
             {
               id: definition.id,
-              axisTitle: "",
+              axisTitle: '',
               axisAlignment: EAxisAlignment.Left,
               autoRange: EAutoRange.Always,
               maxAutoTicks: 5,

@@ -1,11 +1,9 @@
 import * as authentication from '../../authentication';
-import * as charting from '../../charting';
 
 import { AWSCredentials } from '@aws-amplify/core/internals/utils';
 
 import {
   useEffect,
-  useMemo,
   useState
 } from 'react';
 
@@ -55,7 +53,7 @@ function SessionPage(props: PageProperties) {
 
   //
   // @todo
-  //   Make the authentication session part of the application's context, so that the chart loader
+  //   Make the authentication session part of the application's context, so that the chart data source
   //   worker can be instantiated immediately.
   //
   const [authenticationSession, setAuthenticationSession] = useState<AWSCredentials | undefined>(undefined);
@@ -68,57 +66,24 @@ function SessionPage(props: PageProperties) {
 
   const [status, setStatus] = useState('');
 
-  const chartLoaderWorker: Worker = useMemo(() =>
-      new Worker(new URL('../../workers/chart_loader.ts', import.meta.url), {type: 'module'}),
-    []);
-
   useEffect(() => {
-      if (window.Worker && chartLoaderWorker && authenticationSession) {
-        chartLoaderWorker.onmessage = (event: MessageEvent<charting.chart_loader.ResponseMessage>) => {
-          const msg = event.data as charting.chart_loader.ResponseMessage;
-
-          switch (msg.kind) {
-            case charting.chart_loader.KindResponseMessage.DataPayloadReady:
-              setStatus(`Fetched the segment '${msg.filePath}' that had ${msg.dataPayload.byteLength} bytes.`);
-              break;
-          }
-        };
-
-        chartLoaderWorker.onerror = (event: ErrorEvent) => {
-          setErrorTitle('Failed to download an EEG segment.');
-          setErrorMessage(`${event.error}`);
-          setShowError(true);
-          setStatus(`Failed. Reason: ${event.error}`);
-        }
-
-        chartLoaderWorker.postMessage({
-          kind: charting.chart_loader.KindRequestMessage.Initialize,
-          storageRegion: 'us-east-1',
-          storageCredentials: authenticationSession,
-          bucket: 'veegix8iosdev140644-dev',
-          folder: 'recordings/sbelbin/2024-05-09T201117.125Z/data/',
-          filesLoaded: [],
-          loadSequence: charting.chart_loader.LoadSequence.Latest
-        });
-
-        chartLoaderWorker.postMessage({
-          kind: charting.chart_loader.KindRequestMessage.Start,
-          interval: 1000
-        });
+      if (authenticationSession) {
+        setErrorTitle('Authentication gotten.');
+        setErrorMessage('Construction of the chart and timeline controller can proceed.');
+        setShowError(true);
+        setStatus('Construction of the chart and timeline controller can proceed.');
       }
     },
     [
       authenticationSession,
-      chartLoaderWorker,
       setStatus,
       setErrorTitle,
       setErrorMessage,
       setShowError
     ]);
 
-  const initChart = async (rootElement) => {
+  const initChart = async (rootElement: string | HTMLDivElement) => {
     const createChart = async () => {
-      // for demonstration purposes, here we have used Builder API explicitly
       const { sciChartSurface } = await chartBuilder.build2DChart(rootElement, {
         xAxes: {
           type: EAxisType.NumericAxis,

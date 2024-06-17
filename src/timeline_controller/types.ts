@@ -23,6 +23,12 @@ export interface ITimelineController {
   get currentTime(): date_time.TimePoint;
   set currentTimeOffset(timeOffset: duration.Duration);
 
+  addChart(chart: ITimelineChartController): void;
+  removeChart(chart: ITimelineChartController): void;
+
+  addVideo(video: HTMLVideoElement): void;
+  removeVideo(video: HTMLVideoElement): void;
+
   startTimelineNavigation(sourceId: SourceId): RestorePlayback;
 
   onChangeCurrentTime(event: ChangeCurrentTimeEvent): void;

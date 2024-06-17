@@ -1,7 +1,11 @@
 import {
   LoadSequence,
-  OnDataPayloadReady
+  OnDefinitionsReady,
+  OnSegmentReady,
+  RecordingSessionFolderDetails
 } from './types';
+
+import { readPayload } from '../../eeg_readings/parsers/edf';
 
 import * as storage from '../../storage';
 
@@ -11,7 +15,7 @@ import * as storage from '../../storage';
  *  view can display those EEG readings.
  *
  *  @remarks
- *    When the recording session is a live-feed, then this chart loader monitors the recording
+ *    When the recording session is a live-feed, then this chart data source monitors the recording
  *    session's folder in cloud storage to detect when new file segments were uploaded. When it
  *    discovers a list of newly uploaded file segments it proceeds to download the EEG readings
  *    from each segment file so that the chart view can display those newly added EEG readings.
@@ -20,7 +24,7 @@ import * as storage from '../../storage';
  *    EEG readings before those that were recorded earlier. Hence, it fetches from the current
  *    point-in-time until the beginning of the recording session.
  *
- *    When the recording session is that of a completed session, then this chart loader fetches the
+ *    When the recording session is that of a completed session, then this chart data source fetches the
  *    EEG readings starting from the beginning of the recording session and proceeds to fetch the
  *    subsequent ones until reaching the end of the recording session.
  *
@@ -37,43 +41,41 @@ import * as storage from '../../storage';
  *    such that the EEG readings are stored in a single file or as record(s) in a table.
  *
  *    Adapt this class such that it accepts to messages emitted by the chart view requesting that
- *    this chart loader to fetch the segments of EEG readings for a specific range interval. Since,
+ *    this chart data source to fetch the segments of EEG readings for a specific range interval. Since,
  *    the chart views controls the viewable range limits, such as 1 to 2 hours, then its viewable
  *    range is shifted forward or backwards, then the chart view discards EEG recordings that
- *    aren't within the revised viewable range & issues request(s) to this chart loader to fetch
+ *    aren't within the revised viewable range & issues request(s) to this chart data source to fetch
  *    the segments of EEG readings only for that missing interval of the revised viewable range.
  *
  *    With the above adaptation of chart viewer making requests & in the live-feed scenario, this
- *    chart loader class could notify the chart view when EEG readings were uploaded by the app
+ *    chart data source class could notify the chart view when EEG readings were uploaded by the app
  *    and pass a message to the chart view that the recording session has expanded. It would be
  *    for the chart view to determine if those newly added EEG readings are within the revised
- *    viewable range and if so then proceed to request this chart loader to fetch those EEG
+ *    viewable range and if so then proceed to request this chart data source to fetch those EEG
  *    readings segments. Hence, we apply a notify-pull model in which the control is managed by
  *    the chart view to ensure that only the meaningful EEG readings are loaded in memory or
  *    fetched from the cloud infrastructure.
  */
-export class ChartLoader {
-  private storageClient: storage.Client;
-  private bucket: string;
-  private folder: string;
-  private onDataPayloadReady: OnDataPayloadReady;
-  private filesLoaded: Set<string>;
-  private listFilesOrderBy: storage.ListFilesOrderBy;
+export class ChartDataSource {
+  private readonly storageClient: storage.Client;
+  private readonly folderDetails: RecordingSessionFolderDetails;
+  private readonly onDefinitionsReady: OnDefinitionsReady;
+  private readonly onSegmentReady: OnSegmentReady;
+  private readonly listFilesOrderBy: storage.ListFilesOrderBy;
+  private filesLoaded: Set<string> = new Set<string>();
   private monitorFolderInterval?: number;
   private monitorFolderTimer?: NodeJS.Timeout;
   private lastModifiedTime: number = 0;
 
   constructor(storageClient: storage.Client,
-              bucket: string,
-              folder: string,
-              onDataPayloadReady: OnDataPayloadReady,
-              filesLoaded: Set<string> = new Set<string>([]),
+              folderDetails: RecordingSessionFolderDetails,
+              onDefinitionsReady: OnDefinitionsReady,
+              onSegmentReady: OnSegmentReady,
               loadSequence: LoadSequence = LoadSequence.Earliest) {
     this.storageClient = storageClient;
-    this.bucket = bucket;
-    this.folder = folder;
-    this.onDataPayloadReady = onDataPayloadReady;
-    this.filesLoaded = filesLoaded;
+    this.folderDetails = folderDetails;
+    this.onDefinitionsReady = onDefinitionsReady;
+    this.onSegmentReady = onSegmentReady;
     this.listFilesOrderBy = (loadSequence == LoadSequence.Earliest)
                           ? storage.orderByLastModifiedAscending
                           : storage.orderByLastModifiedDescending;
@@ -113,8 +115,8 @@ export class ChartLoader {
 
     try {
       const listFiles = await storage.listFilesModifiedAfter(this.storageClient,
-                                                             this.bucket,
-                                                             this.folder,
+                                                             this.folderDetails.bucket,
+                                                             this.folderDetails.folder,
                                                              new Date(this.lastModifiedTime),
                                                              listFilesFilter,
                                                              this.listFilesOrderBy);
@@ -124,13 +126,19 @@ export class ChartLoader {
           return;
         }
 
+        storage.fetchData(this.storageClient, this.folderDetails.bucket, file.Key!, file.Size!)
+        .then((dataBuffer) => {
+          const payload = readPayload(dataBuffer);
+
+          if (this.filesLoaded.size === 0) {
+            this.onDefinitionsReady(payload.definitions);
+          }
+
+          this.onSegmentReady(payload.segment);
+        });
+
         this.filesLoaded.add(file.Key!);
         this.lastModifiedTime = Math.max(this.lastModifiedTime, file.LastModified?.getTime() ?? 0);
-
-        storage.fetchData(this.storageClient, this.bucket, file.Key!, file.Size!)
-        .then((dataPayload) => {
-          this.onDataPayloadReady({ filePath: file.Key!, dataPayload: dataPayload });
-        });
       }
     }
     catch(error) {
