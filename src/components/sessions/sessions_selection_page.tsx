@@ -1,5 +1,5 @@
-import fetchRecordings from '../../models/recordings/fetch_recordings';
-import Recording from '../../models/recordings/recording';
+import { fetchRecordings } from '../../models/recordings';
+import { Recording } from '../../models/recordings';
 
 import dateOrNow from '../../utilities/date_time/date_or_now';
 import { formatDateRangeDuration } from '../../utilities/duration/format_duration';

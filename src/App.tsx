@@ -15,8 +15,20 @@ import SiteFooter from './components/site/footer';
 
 import { useEffect, useState } from 'react';
 
-import { Route, Routes, useNavigate } from 'react-router-dom';
 import { Container, Row } from 'react-bootstrap';
+
+import { Route, Routes, useNavigate } from 'react-router-dom';
+
+import { SciChartSurface } from 'scichart';
+
+/**
+ * @todo
+ *   Wrap this as part of chart code such that it's hidden from the main application code.
+ *   Determine if there is a possibility to defer until the user opens a session page and
+ *   if so to do it once (i.e. does it make sense to be a context).
+ */
+SciChartSurface.loadWasmFromCDN();
+SciChartSurface.UseCommunityLicense();
 
 function App() {
   const navigate = useNavigate();
@@ -101,9 +113,7 @@ function App() {
             path="/sessions/id"
             element={<SessionPage
                         isUserLoggedIn={isUserLoggedIn}
-                        storageRegion={'us-east-1'}
-                        bucket={'veegix8iosdev140644-dev'}
-                        folder={'recordings/sbelbin/2024-05-09T201117.125Z/data/'}
+                        recordingId={'f11a57e6-50f2-49d4-83bc-a6d8927e518a'} // main -  {'567e4583-2e70-4a47-b360-1e2650c0673d'}, {'57d7e1f4-5c4e-4dda-8e63-ef77db839690'}
                      />}
           />
         </Routes>

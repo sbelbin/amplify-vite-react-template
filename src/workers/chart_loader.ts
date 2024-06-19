@@ -27,7 +27,7 @@ self.onmessage = (event: MessageEvent<RequestMessage>) => {
           self.postMessage(
             Object.assign(segment, { kind: KindResponseMessage.SegmentReady }));
 
-        chartDataSource = new ChartDataSource(storage.connectWithCredentials(msg.folderDetails.region, msg.storageCredentials),
+        chartDataSource = new ChartDataSource(storage.connectWithCredentials(msg.folderDetails.region, msg.sessionCredentials),
                                               msg.folderDetails,
                                               onDefinitionsReady,
                                               onSegmentReady,

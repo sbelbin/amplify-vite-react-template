@@ -1,6 +1,15 @@
 import * as authentication from '../../authentication';
 
-import { AWSCredentials } from '@aws-amplify/core/internals/utils';
+import { fetchRecordingById } from '../../models/recordings/fetch_recording_by_id';
+import { RecordingId } from '../../models/recordings';
+
+import { ChartController } from '../../chart/controller/controller';
+import {
+  LoadSequence,
+  RecordingSessionFolder
+} from '../../chart/data_source';
+
+import { TimelineController } from '../../timeline_controller';
 
 import {
   useEffect,
@@ -18,23 +27,13 @@ import {
   ToastContainer
 } from 'react-bootstrap';
 
-import {
-  EAutoRange,
-  EAxisType,
-  EThemeProviderType,
-  NumberRange,
-  XyDataSeries,
-  XyScatterRenderableSeries,
-  chartBuilder
-} from "scichart";
+import { EThemeProviderType, SciChartJsNavyTheme, chartBuilder } from "scichart";
 
 import { SciChartNestedOverview, SciChartReact } from "scichart-react";
 
 interface PageProperties {
   isUserLoggedIn: () => boolean;
-  storageRegion: string;
-  bucket: string;
-  folder: string;
+  recordingId: RecordingId;
 }
 
 function SessionPage(props: PageProperties) {
@@ -51,86 +50,88 @@ function SessionPage(props: PageProperties) {
     },
     [navigate, props]);
 
-  //
-  // @todo
-  //   Make the authentication session part of the application's context, so that the chart data source
-  //   worker can be instantiated immediately.
-  //
-  const [authenticationSession, setAuthenticationSession] = useState<AWSCredentials | undefined>(undefined);
-
-  useEffect(() => {
-      authentication.sessionCredentials()
-      .then((credentials) => setAuthenticationSession(credentials));
-    },
-    [setAuthenticationSession]);
+  let timelineController: TimelineController | undefined;
+  let chartController: ChartController | undefined;
 
   const [status, setStatus] = useState('');
 
-  useEffect(() => {
-      if (authenticationSession) {
-        setErrorTitle('Authentication gotten.');
-        setErrorMessage('Construction of the chart and timeline controller can proceed.');
-        setShowError(true);
-        setStatus('Construction of the chart and timeline controller can proceed.');
-      }
-    },
-    [
-      authenticationSession,
-      setStatus,
-      setErrorTitle,
-      setErrorMessage,
-      setShowError
-    ]);
-
   const initChart = async (rootElement: string | HTMLDivElement) => {
-    const createChart = async () => {
-      const { sciChartSurface } = await chartBuilder.build2DChart(rootElement, {
-        xAxes: {
-          type: EAxisType.NumericAxis,
-          options: {
-            autoRange: EAutoRange.Once,
-            growBy: new NumberRange(0.2, 0.2),
-          },
-        },
-        yAxes: {
-          type: EAxisType.NumericAxis,
-          options: { autoRange: EAutoRange.Never },
-        },
-        surface: {
-          theme: { type: EThemeProviderType.Dark },
-          title: "Scatter Chart",
-          titleStyle: {
-            fontSize: 20,
-          },
-        },
-      });
 
-      return sciChartSurface;
+    const sessionCredentialsPromise = authentication.sessionCredentials();
+
+    const recording = await fetchRecordingById(props.recordingId);
+
+    const sessionCredentials = await sessionCredentialsPromise;
+
+    const chartPromise = chartBuilder.build2DChart(rootElement,
+                                                   {
+                                                    surface: {
+                                                      theme: { type: EThemeProviderType.Navy },
+                                                    }
+                                                   });
+
+    if (!recording) {
+      setErrorTitle('Recording session unavailable.');
+      setErrorMessage('The recording session is unavailable');
+      setShowError(true);
+      setStatus('The recording session is unavailable');
+
+      const { sciChartSurface } = await chartPromise;
+      return { sciChartSurface };
+    }
+
+    // if (!recording.data) {
+    //   setErrorTitle('Recording session unavailable.');
+    //   setErrorMessage('Recording session EEG readings are unavailable.');
+    //   setShowError(true);
+    //   setStatus('Recording session EEG readings are unavailable.');
+
+    //   setErrorTitle('Authentication gotten.');
+    //   setErrorMessage('Construction of the chart and timeline controller can proceed.');
+    //   setShowError(true);
+    //   setStatus('Construction of the chart and timeline controller can proceed.');
+
+    //   const { sciChartSurface } = await chartPromise;
+    //   return { sciChartSurface };
+    // }
+
+    const startTime = recording.startTime.getTime();
+    const finishTime = recording.finishTime?.getTime();
+
+    const referenceTime = recording.isLiveFeed
+                        ? Date.now()
+                        : startTime;
+
+    timelineController = new TimelineController(startTime, finishTime, referenceTime);
+
+    const folderDetails: RecordingSessionFolder = {
+      region: 'us-east-1',
+      bucket: 'veegix8iosdev140644-dev',
+      folder: 'recordings/sbelbin/2024-05-09T201117.125Z/data/'
     };
 
-    // a function that simulates an async data fetching
-    const getData = async () => {
-      await new Promise((resolve) => {
-        setTimeout(() => resolve({}), 1500);
-      });
+    const loadSequence = (referenceTime === startTime)
+                       ? LoadSequence.Earliest
+                       : LoadSequence.Latest;
 
-      return { xValues: [0, 1, 2, 3, 4], yValues: [3, 6, 1, 5, 2] };
-    };
+    const { wasmContext, sciChartSurface } = await chartPromise;
 
-    const [sciChartSurface, data] = await Promise.all([createChart(), getData()]);
+    chartController = new ChartController({ wasmContext, sciChartSurface },
+                                          timelineController,
+                                          sessionCredentials,
+                                          folderDetails,
+                                          loadSequence);
 
-    const wasmContext = sciChartSurface.webAssemblyContext2D;
+    return { sciChartSurface: chartController.view.chart.sciChartSurface };
+  };
 
-    sciChartSurface.renderableSeries.add(
-      new XyScatterRenderableSeries(wasmContext, {
-        dataSeries: new XyDataSeries(wasmContext, {
-          ...data,
-        }),
-        strokeThickness: 4,
-        stroke: "#216939",
-      })
-    );
-    return { sciChartSurface };
+  const deleteChart = async () => {
+    if (chartController) {
+      await chartController.dispose();
+    }
+
+    chartController = undefined;
+    timelineController = undefined;
   };
 
   return (
@@ -165,15 +166,15 @@ function SessionPage(props: PageProperties) {
           {status}
         </div>
         <SciChartReact
-          style={{ width: 400, height: 300 }}
+          style={{ width: 1200, height: 500 }}
           fallback={
             <div className="fallback">
               <div>Data fetching & Chart Initialization in progress</div>
             </div>
           }
           initChart={initChart}
+          onDelete={deleteChart}
         >
-          <SciChartNestedOverview />
         </SciChartReact>
       </Stack>
     </Container>

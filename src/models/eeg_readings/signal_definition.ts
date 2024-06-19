@@ -25,4 +25,27 @@ export interface SignalDefinition {
   sampleValueBits: SampleValueBits;
 }
 
-export type SignalDefinitions = Array<SignalDefinition>;
+export type SignalDefinitions = SignalDefinition[];
+
+export function makeSignalDefinitions(count: number) {
+  const definitions: SignalDefinitions = Array<SignalDefinition>(count);
+
+  for (let index = 0; index < count; ++index) {
+    definitions[index] = {
+      id: '',
+      label: '',
+      transducer: '',
+      dimensions: '',
+      physicalRange: { min: 0, max: 0 },
+      digitalRange: { min: 0, max: 0 },
+      preFilters: '',
+      samplesCountPerRecord: 0,
+      isAnnotations: false,
+      scale: 0,
+      samplingRate: 0,
+      sampleValueBits: SampleValueBits.bits16
+    };
+  }
+
+  return definitions;
+}

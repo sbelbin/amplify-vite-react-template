@@ -15,26 +15,35 @@ import {
   Payload,
   SampleValueBits,
   Segment,
-  SignalDefinition,
-  SignalDefinitions
+  SignalDefinitions,
+  makeSignalDefinitions
 } from '../../../models/eeg_readings';
 
+/**
+ * Reads the recording session's payload which is given as a raw buffer.
+ *
+ * @param buffer - Raw buffer with the contents of the recording session.
+ *
+ * @returns Returns a recording session payload as a structured representation.
+ */
 export function readPayload(buffer: ArrayBuffer) : Payload {
   const parser = new Parser(buffer);
 
   const header = readHeader(parser);
+
   const definitions = readDefinitions(parser, header.samplePeriod);
+
   const segmentInterval = readSegment(parser,
-                                              header.timeRange.min,
-                                              header.recordsCount,
-                                              header.samplePeriod,
-                                              definitions);
+                                      header.timeRange.min,
+                                      header.timeRange,
+                                      header.samplePeriod,
+                                      definitions);
 
   return {
-    header: header,
-    definitions: definitions,
-    segment: segmentInterval
-  }
+           header: header,
+           definitions: definitions.filter((definition) => !definition.isAnnotations),
+           segment: segmentInterval
+         }
 }
 
 class Parser {
@@ -110,7 +119,7 @@ class Parser {
   }
 
   public readTextAsDate(): string {
-    const text = this.readText(6);
+    const text = this.readText(8);
     const day   = text.slice(0, 2);
     const month = text.slice(3, 5);
     const year  = `20${text.slice(6)}`;
@@ -118,7 +127,7 @@ class Parser {
   }
 
   public readTextAsTime(): string | undefined {
-    const text = this.readText(6);
+    const text = this.readText(8);
     const hour   = text.slice(0 ,2);
     const minute = text.slice(3, 5);
     const second = text.slice(6);
@@ -262,8 +271,9 @@ class Parser {
   }
 
   private checkSufficientBytes(length: ByteSize): void {
-    if (this.areSufficientBytes(length)) return;
-    throw Error();
+    if (!this.areSufficientBytes(length)) {
+      throw Error('There is an insufficient number of bytes remaining for the parser to use.');
+    }
   }
 }
 
@@ -288,8 +298,8 @@ function readHeader(parser: Parser) : Header {
   const patientId = parser.readText(80);
   const description = parser.readText(80);
   const startTime = parser.readTextAsTimePoint();
-  const headerSize = parser.readTextAsInt16(8);
-  parser.readText(44); // Reserved
+  const headerSize = parser.readTextAsInt16();
+  parser.readText(44); // Skip over the reserved.
   const recordsCount = parser.readTextAsInt16();
 
   const samplePeriod = duration.secondsToDuration(parser.readTextAsFloat32());
@@ -307,17 +317,24 @@ function readHeader(parser: Parser) : Header {
          }
 }
 
+/**
+ * Reads the signal definitions section from the recording session.
+ *
+ * @param parser - The parser to use.
+ * @param samplePeriod - The sampling period which is declared in the recording session's header.
+ * @returns A collection of signal definitions.
+ *
+ * @remarks
+ *   It's imperative to parse each field because the data is organized in a manner in which the
+ *   values are grouped by field.
+ *
+ *   Thus, when there are 30 definitions, the values for the label field is an array string[30].
+ *   Thus, labels[0] is the label for the 1st definition, labels[1] is for the 2nd definitions...
+ */
 function readDefinitions(parser: Parser,
                          samplePeriod: duration.Duration): SignalDefinitions {
-  const signalsCount = parser.readTextAsInt8();
+  const definitions = makeSignalDefinitions(parser.readTextAsInt8());
 
-  const definitions = Array<SignalDefinition>(signalsCount);
-
-  /**
-   * It's imperative to parse each field since the data is organized such that for each field is
-   * an array based on the number definitions. Thus, if there are 30 definitions, then the data
-   * is labels[30], transducer[30], dimensions[30], etc...
-   */
   definitions.forEach((definition) => definition.label = parser.readText(16));
   definitions.forEach((definition) => definition.transducer = parser.readText(80));
   definitions.forEach((definition) => definition.dimensions = parser.readText(8));
@@ -329,8 +346,9 @@ function readDefinitions(parser: Parser,
   definitions.forEach((definition) => definition.samplesCountPerRecord = parser.readTextAsInt16());
   definitions.forEach(()           => parser.readBytes(32)); // Skip over reserved bytes.
 
-  definitions.forEach((definition) => {
+  definitions.forEach((definition, index) => {
     definition.isAnnotations = definition.label.startsWith('EDF Annotations');
+    definition.id = (!definition.isAnnotations) ? `${index}` : '';
     definition.scale = generics.diff(definition.physicalRange) / generics.diff(definition.digitalRange);
     definition.samplingRate = samplePeriod / definition.samplesCountPerRecord;
     definition.sampleValueBits = SampleValueBits.bits16; // Default to 16-bits integer.
@@ -339,14 +357,24 @@ function readDefinitions(parser: Parser,
   return definitions;
 }
 
+/**
+ * Reads a section of the recording session that is a segment of the annotations and the sampling
+ * values to extract from that recording session.
+ *
+ * @param parser - The parser to use.
+ * @param startTime - The recording session's start time. Used to compute offsets.
+ * @param timeRange - The range of time to extract annotations and sampling values.
+ * @param samplePeriod - The sample period of a single record.
+ * @param definitions - The signal definitions which includes those for annotations.
+ * @returns A segment of the recording session's annotations and sampling values.
+ */
 function readSegment(parser: Parser,
                      startTime: date_time.TimePoint,
-                     recordsCount: number,
+                     timeRange: date_time.TimePointRange,
                      samplePeriod: duration.Duration,
                      definitions: SignalDefinitions): Segment {
-  const finishTime = startTime + (samplePeriod * recordsCount);
   const segment: Segment = {
-                   timeRange: { min: startTime, max: finishTime },
+                   timeRange: timeRange,
                    samples: [],
                    annotations: []
                  };
@@ -361,9 +389,7 @@ function readSegment(parser: Parser,
     }
   });
 
-  for (let recordIndex = 0, recordTime = startTime;
-       recordIndex < recordsCount;
-       recordIndex++, recordTime += samplePeriod) {
+  for (let recordTime = timeRange.min; recordTime < timeRange.max; recordTime += samplePeriod) {
     definitions.forEach((definition) => {
       if (definition.isAnnotations) {
         const annotations = parser.readAnnotations(startTime,

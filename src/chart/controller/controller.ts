@@ -4,7 +4,7 @@ import {
   KindRequestMessage,
   KindResponseMessage,
   LoadSequence,
-  RecordingSessionFolderDetails,
+  RecordingSessionFolder,
   ResponseMessage,
 } from '../data_source';
 
@@ -48,16 +48,22 @@ import { TWebAssemblyChart } from 'scichart';
  *   SegmentReady response message which is the mechanism already in place.
  */
 export class ChartController {
-  private view: ChartView;
+  public readonly view: ChartView;
   private dataSource: Worker | undefined;
+  private readonly disposePromise: Promise<void>;
+  private disposeResolver?: () => void;
+
 
   constructor(chart: TWebAssemblyChart,
               timelineController: ITimelineController,
-              storageCredentials: AwsCredentialIdentity | undefined,
-              folderDetails: RecordingSessionFolderDetails,
+              sessionCredentials: AwsCredentialIdentity | undefined,
+              folderDetails: RecordingSessionFolder,
               loadSequence: LoadSequence) {
     this.view = new ChartView(chart, timelineController);
     this.dataSource = new Worker(new URL('../../workers/chart_loader.ts', import.meta.url), {type: 'module'});
+
+    this.disposePromise = new Promise<void>((resolve) =>
+                                this.disposeResolver = resolve);
 
     // @todo - Identify a means to report an error back to the users ???
     // this.loader.onerror = (event: ErrorEvent) => {
@@ -78,13 +84,16 @@ export class ChartController {
         case KindResponseMessage.Disposed:
           this.dataSource?.terminate();
           this.dataSource = undefined;
+
+          this.disposeResolver?.();
+          this.disposeResolver = undefined;
           break;
       }
     };
 
     this.dataSource.postMessage({
       kind: KindRequestMessage.Initialize,
-      storageCredentials: storageCredentials,
+      sessionCredentials: sessionCredentials,
       folderDetails: folderDetails,
       loadSequence: loadSequence
     });
@@ -95,9 +104,24 @@ export class ChartController {
     });
   }
 
-  public dispose() {
-    this.dataSource?.postMessage({
-      kind: KindRequestMessage.Dispose
-    });
+  /**
+   * Dispose the chart controller and the instances that it owns.
+   *
+   * @returns Promise that is resolved once everything is disposed.
+   *
+   * @remarks
+   *   Since the underlying data-source is a web-worker it's necessary to post a request message
+   *   to the data-source within the web-worker to cancel any work that it's doing and to dispose
+   *   itself. Once disposed, it replies to let this controller aware that it's safe to terminate
+   *   the web-worker.
+   */
+  public async dispose() : Promise<void> {
+    if (this.dataSource) {
+      this.dataSource?.postMessage({
+        kind: KindRequestMessage.Dispose
+      });
+    }
+
+    return this.disposePromise;
   }
 }

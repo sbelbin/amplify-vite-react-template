@@ -2,7 +2,7 @@ import {
   LoadSequence,
   OnDefinitionsReady,
   OnSegmentReady,
-  RecordingSessionFolderDetails
+  RecordingSessionFolder
 } from './types';
 
 import { readPayload } from '../../eeg_readings/parsers/edf';
@@ -58,7 +58,7 @@ import * as storage from '../../storage';
  */
 export class ChartDataSource {
   private readonly storageClient: storage.Client;
-  private readonly folderDetails: RecordingSessionFolderDetails;
+  private readonly folderDetails: RecordingSessionFolder;
   private readonly onDefinitionsReady: OnDefinitionsReady;
   private readonly onSegmentReady: OnSegmentReady;
   private readonly listFilesOrderBy: storage.ListFilesOrderBy;
@@ -68,7 +68,7 @@ export class ChartDataSource {
   private lastModifiedTime: number = 0;
 
   constructor(storageClient: storage.Client,
-              folderDetails: RecordingSessionFolderDetails,
+              folderDetails: RecordingSessionFolder,
               onDefinitionsReady: OnDefinitionsReady,
               onSegmentReady: OnSegmentReady,
               loadSequence: LoadSequence = LoadSequence.Earliest) {
@@ -111,7 +111,8 @@ export class ChartDataSource {
       return;
     }
 
-    const listFilesFilter = (file: storage.File) => !this.filesLoaded.has(file?.Key ?? '');
+    const listFilesFilter = (file: storage.File) =>
+                              !this.filesLoaded.has(file?.Key ?? '');
 
     try {
       const listFiles = await storage.listFilesModifiedAfter(this.storageClient,
@@ -135,10 +136,10 @@ export class ChartDataSource {
           }
 
           this.onSegmentReady(payload.segment);
-        });
 
-        this.filesLoaded.add(file.Key!);
-        this.lastModifiedTime = Math.max(this.lastModifiedTime, file.LastModified?.getTime() ?? 0);
+          this.filesLoaded.add(file.Key!);
+          this.lastModifiedTime = Math.max(this.lastModifiedTime, file.LastModified?.getTime() ?? 0);
+        });
       }
     }
     catch(error) {

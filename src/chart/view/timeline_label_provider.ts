@@ -71,7 +71,7 @@ function makeTimePointLabels(timePoint: date_time.TimePoint,
 
     case date_time.DateTimePrecision.Minute:
       labels.axis    = dateTime.toLocaleDateString( locale, { year: 'numeric', month: '2-digit', day: '2-digit' } ) + ' ' +
-                dateTime.toLocaleTimeString( locale, { hourCycle: 'h24', hour: '2-digit', minute: '2-digit', second: '2-digit' } );
+                       dateTime.toLocaleTimeString( locale, { hourCycle: 'h24', hour: '2-digit', minute: '2-digit', second: '2-digit' } );
 
       labels.cursor  = dateTime.toLocaleTimeString( locale, { hourCycle: 'h24', hour: '2-digit', minute: '2-digit', second: '2-digit' } );
       break;
@@ -80,7 +80,7 @@ function makeTimePointLabels(timePoint: date_time.TimePoint,
       labels.axis    = dateTime.toLocaleDateString( locale, { year: 'numeric', month: '2-digit', day: '2-digit' } ) + ' ' +
                        dateTime.toLocaleTimeString( locale, { hourCycle: 'h24', hour: '2-digit', minute: '2-digit', second: '2-digit' } );
 
-      labels.cursor  = `.$ dateTime.getMilliseconds().toString().padStart(3, '0')}`;
+      labels.cursor  = `.${dateTime.getMilliseconds().toString().padStart(3, '0')}`;
       break;
 
     case date_time.DateTimePrecision.Subsecond:
@@ -88,7 +88,7 @@ function makeTimePointLabels(timePoint: date_time.TimePoint,
       labels.axis    = dateTime.toLocaleDateString( locale, { year: 'numeric', month: '2-digit', day: '2-digit' } ) + ' ' +
                        dateTime.toLocaleTimeString( locale, { hourCycle: 'h24', hour: '2-digit', minute: '2-digit', second: '2-digit' } );
 
-      labels.cursor  = `.$ dateTime.getMilliseconds().toString().padStart(3, '0')}`;
+      labels.cursor  = `.${dateTime.getMilliseconds().toString().padStart(3, '0')}`;
       break;
   }
 

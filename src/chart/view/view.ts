@@ -6,7 +6,7 @@ import {
   RestoreTimelineNavigationBehavior
 } from "./types";
 
-import { TimelineOverviewModifier } from "./timeline_overview_modifier";
+// import { TimelineOverviewModifier } from "./timeline_overview_modifier";
 
 import * as eeg_readings from '../../models/eeg_readings';
 import * as date_time from '../../utilities/date_time';
@@ -28,7 +28,7 @@ import {
   MouseWheelZoomModifier,
   NumberRange,
   RubberBandXyZoomModifier,
-  SciChartJsNavyTheme,
+//  SciChartJsNavyTheme,
   TextAnnotation,
   VerticalLineAnnotation,
   XAxisDragModifier,
@@ -37,16 +37,21 @@ import {
   ZoomPanModifier,
   ZoomExtentsModifier,
   VisibleRangeChangedArgs,
-  AnnotationBase
+  AnnotationBase,
+  XyScatterRenderableSeries,
+  LeftAlignedOuterVerticallyStackedAxisLayoutStrategy,
+  SciChartJsNavyTheme
 } from 'scichart';
 
 import { NumericAxis } from 'scichart/Charting/Visuals/Axis/NumericAxis';
-import { SciChartOverview } from 'scichart/Charting/Visuals/SciChartOverview';
-import { SciChartSurface, TWebAssemblyChart } from 'scichart/Charting/Visuals/SciChartSurface';
+// import { SciChartOverview } from 'scichart/Charting/Visuals/SciChartOverview';
+import { TWebAssemblyChart } from 'scichart/Charting/Visuals/SciChartSurface';
 
 import { TSciChart } from 'scichart/types/TSciChart';
 
 import { createImageAsync } from 'scichart/utils/imageUtil';
+
+const textLabelOffset = -2.0;
 
 /**
  * The chart view are the the readings displayed to users for a given interval range of time.
@@ -65,18 +70,23 @@ export class ChartView implements timeline_controller.ITimelineChartController,
                                   IChartViewTimelineNavigation {
   readonly sourceId: timeline_controller.SourceId = 1;
 
-  private readonly chart: TWebAssemblyChart;
+  public readonly chart: TWebAssemblyChart;
   private readonly timelineAxis: NumericAxis;
   private readonly timelineIndicator: VerticalLineAnnotation;
 
-  private timelineController: timeline_controller.ITimelineController;
+  private readonly timelineController: timeline_controller.ITimelineController;
   private onRestorePlayback?: timeline_controller.RestorePlayback;
   private restoreBehavior?: RestoreTimelineNavigationBehavior;
+  private readonly annotationDataSeries: XyDataSeries;
+  private dataSeries: XyDataSeries[] = [];
 
   constructor(chart: TWebAssemblyChart,
               timelineController: timeline_controller.ITimelineController) {
     this.chart = chart;
     this.timelineController = timelineController;
+
+    this.chart.sciChartSurface.layoutManager.leftOuterAxesLayoutStrategy =
+      new LeftAlignedOuterVerticallyStackedAxisLayoutStrategy();
 
     this.timelineAxis = makeTimelineAxis(this.chart.wasmContext,
                                          this.timelineController.timeRange);
@@ -98,83 +108,109 @@ export class ChartView implements timeline_controller.ITimelineChartController,
     this.chart.sciChartSurface.xAxes.add(this.timelineAxis);
     this.chart.sciChartSurface.annotations.add(this.timelineIndicator);
 
+    this.annotationDataSeries = new XyDataSeries(
+                                      this.chart.wasmContext,
+                                      {
+                                        dataIsSortedInX: true,
+                                        isSorted: true,
+                                        containsNaN: false
+                                      });
+
+    this.addAnnotationsLane();
+
     this.chart.sciChartSurface.chartModifiers.add(
       // new AnnotationTooltipModifier(),
       new TimelineChartModifier(this),
-      new YAxisDragModifier(),
+      // new YAxisDragModifier(),
       new XAxisDragModifier(),
       new RubberBandXyZoomModifier( { xyDirection: EXyDirection.XDirection, executeOn: EExecuteOn.MouseRightButton } ),
       new MouseWheelZoomModifier( { xyDirection: EXyDirection.XDirection } ),
-      new ZoomExtentsModifier(),
-      new ZoomPanModifier()
+      // new ZoomExtentsModifier(),
+      // new ZoomPanModifier()
     );
 
-    // const edf = new EDF(buffer);
-
-    //
-    // \todo Steven Belbin
-    //   Limit to the first 8 channels.
-    //   However, this should selected based on the view.
-    //
-    // const signals = edf.signals
-    //                    .slice(0, Math.min(8, edf.signals.length + 1));
-
-    // signals.forEach((signal, index) =>
-    // {
-    //   const sensor = makeSensor(index, chart.wasmContext, this.timelineAxis.id, signal);
-    //   chart.sciChartSurface.yAxes.add(sensor.axis);
-    //   chart.sciChartSurface.renderableSeries.add(sensor.line);
-    //   chart.sciChartSurface.annotations.add(...sensor.annotations);
-
-    //   this.sensors.push(sensor);
-    // });
-
-    // this.loadAnnotations(edf.annotations);
-
-    SciChartOverview.create(
-      this.chart.sciChartSurface,
-      "overview",
-      {
-        customRangeSelectionModifier: new TimelineOverviewModifier(this),
-        mainAxisId: this.timelineAxis.id,
-        // secondaryAxisId: this.sensors[0].id,
-        theme: new SciChartJsNavyTheme()
-      }
-    );
+    // SciChartOverview.create(
+    //   this.chart.sciChartSurface,
+    //   "overview",
+    //   {
+    //     customRangeSelectionModifier: new TimelineOverviewModifier(this),
+    //     mainAxisId: this.timelineAxis.id,
+    //     // secondaryAxisId: this.sensors[0].id,
+    //     theme: new SciChartJsNavyTheme()
+    //   }
+    // );
 
     this.timelineController.addChart(this);
   }
 
-  //
-  // \brief
-  //   Load the annotations so that the users see the point-in-time of the annotation.
-  //
-  // \todo
-  //   1 - Add a tooltip so that hovering on the icon displays the text.
-  //   2 - Indicate when there are many notes at a given point-in-time.
-  //   3 - On a double-click either to:
-  //         a) Navigate to point-in-time with an option to pause playback.
-  //         b) Open the text.
-  //   4 - Investigate placing a tiny representation (i.e. tiny icon or dot) of
-  //       these annotations within the overview.
-  //   5 - Add a view (with a tab) on the side that has all the annotations.
-  //         a) Displayed as a vertical timeline.
-  //             See Flowbite's grouped timeline https://flowbite.com/docs/components/timeline/
-  //         b) This tab can be shown/hidden.
-  //         c) Selecting (double-click) brings the chart & video to that point in time.
-  //   6 - Discuss with team on how to represent a span.
-  //         a) In horizontal timeline annotations with a span
-  //            - Are placed above all punctual annotations.
-  //            - A annotation spans which begins earlier are above annotation spans that begin
-  //              later.
-  //            - When annotation spans that begin at the same time then the ones that ends later
-  //              is placed above the others.
-  //         b) In horizontal timeline.
-  //
+  /**
+   * Load the annotation notes within the chart view such that they are placed at the
+   * corresponding point-in-time as to reflect the other sampling values.
+   *
+   * @param annotations - A collection of annotation notes.
+   *
+   * @remarks
+   *   Each annotation has it's x-axis value assigned to the point-in-time of the annotation,
+   *   whereas the y-axis value is the note's index offset. For the moment, this addresses
+   *   situations when many annotations are for the same point-in-time within a given
+   *   annotations block.
+   *
+   *   Below are some of the ideas below on how improve the experience for users.
+   *
+   * @todo - Tooltip on hover.
+   *   Add tooltip capability such that when users hover above the symbol/icon for an annotation
+   *   then the text portion and additional meta-information appears in a popup dialog-box.
+   *
+   * @todo - Horizontal candlestick presentation
+   *   Since an annotation have a duration, a start & finish times we need to present that to users
+   *   within the chart.
+   *
+   *   This is important since users need to see the duration of a given annotation to better
+   *   comprehend the context(s) of what they see in the sampling values.
+   *
+   * @todo - Levels based on kind of annotation.
+   *   Consider annotation levels based on the kind of annotation such as administrating of
+   *   medication, observations by neurologist, notes taken by healthcare practitioners on the
+   *   patient's state that were noted while the recording session was being recorded.
+   *
+   * @todo - Overlaps annotations long durations are ranked higher.
+   *   Detect overlaps with other existing annotations, when there is an overlap then annotations
+   *   having a longer duration are ranked higher. Otherwise as tie-breaks, those with an earlier
+   *   start time are ranked higher, then by the order in which they were inserted into the lane.
+   *
+   * @todo - Present all annotation symbols
+   *   Look into the possibility for the chart view's overview to represent the entire recording
+   *   session rather than restricted to the chart view's visible range limits.
+   *
+   *   Users would have then capability to visualize all of the annotations symbols of that
+   *   recording session.
+   *
+   *   Additionally, users could select an annotation symbol as to navigate to that point-in-time,
+   *   at which point the chart view's and video are then synchronized to that moment and playback
+   *   resumes from that moment.
+   *
+   * @todo - Vertical presentation of annotations.
+   *   Present annotations vertically in a tab or side-bar. In which for each annotation, users
+   *   view the annotation's note(s) and meta-information.
+   *
+   *   Where users can view through the vertical timeline to view each annotation without stopping
+   *   playback or changing the current point-in-time of the chart view or the video.
+   *
+   *   Additionally, users could select an annotation symbol as to navigate to that point-in-time,
+   *   at which point the chart view's and video are then synchronized to that moment and playback
+   *   resumes from that moment.
+   *
+   *   See Flowbite's grouped timeline https://flowbite.com/docs/components/timeline/ for an idea
+   *   on how to present this to users.
+   */
   public loadAnnotations(annotations: eeg_readings.Annotations): void {
     annotations.forEach((annotation) => {
-      annotation.notes.forEach((note) => {
-        const chartAnnotation = new AxisMarkerAnnotation({
+      annotation.notes.forEach((note, index) => {
+        console.debug(`Adding an annotation note of ${note}.`);
+
+        this.annotationDataSeries.append(annotation.timeRange.min, index);
+
+        const markerAnnotation = new AxisMarkerAnnotation({
                                         image: annotationImageElement,
                                         imageHeight: 30,
                                         imageWidth: 30,
@@ -184,8 +220,6 @@ export class ChartView implements timeline_controller.ITimelineChartController,
                                         xAxisId: this.timelineAxis.id,
                                         x1: annotation.timeRange.min
                                     });
-
-        console.debug(`Added the note of ${note}.`);
 
         // const chartAnnotation = new CustomAnnotation(
         //                        {
@@ -202,22 +236,35 @@ export class ChartView implements timeline_controller.ITimelineChartController,
         //         </svg>`;
 
         // chartAnnotation.setSvg(svgDetails);
-        this.chart.sciChartSurface.annotations.add(chartAnnotation);
+        this.chart.sciChartSurface.annotations.add(markerAnnotation);
       });
     });
   }
 
   /**
+   * Load lanes into the chart view based on the signal definitions used during the recording session.
    *
-   * @param definitions - The definitions
+   * @param definitions - The signal definitions.
    */
   public loadDefinitions(definitions: eeg_readings.SignalDefinitions): void {
-    definitions.forEach((definition) => loadDefinition(this.chart, definition));
+    definitions.forEach((definition) => this.loadDefinition(definition));
   }
 
+  /**
+   * Load a segment of the recording session containing sampling values & annotations into
+   * the chart's view.
+   *
+   * @param segment - A segment of the recording session.
+   */
   public loadSegment(segment: eeg_readings.Segment) {
-    segment.samples.forEach((sample) => {
-      const dataSeries = findDataSeries(this.chart.sciChartSurface, sample.signalId);
+    console.debug(`Segment spans from ${new Date(segment.timeRange.min)} to ${new Date(segment.timeRange.max)}`);
+
+    this.expandTimeline(segment.timeRange);
+
+    this.loadAnnotations(segment.annotations);
+
+    segment.samples.forEach((sample, index) => {
+      const dataSeries = this.dataSeries.at(index);
 
       if (dataSeries) {
         if (!dataSeries.hasValues || dataSeries.xRange.max < segment.timeRange.min) {
@@ -228,10 +275,6 @@ export class ChartView implements timeline_controller.ITimelineChartController,
         }
       }
     });
-
-    this.loadAnnotations(segment.annotations);
-
-    this.expandTimeline(segment.timeRange);
   }
 
   public startTimelineNavigation(): void {
@@ -245,7 +288,7 @@ export class ChartView implements timeline_controller.ITimelineChartController,
 
   /**
    * ITimelineChartController interface.
-  */
+   */
 
   /**
    * Get the chart view's current time.
@@ -302,7 +345,7 @@ export class ChartView implements timeline_controller.ITimelineChartController,
 
   /**
    * Get the chart's view current time-offset relative to it's start time.
-  */
+   */
   public get currentTimeOffset() : duration.Duration {
     return this.currentTime - this.startTime;
   }
@@ -316,7 +359,7 @@ export class ChartView implements timeline_controller.ITimelineChartController,
    *
    *   Otherwise, when the given time-offset is a negative value, then the chart view's current
    *   point-in-time is it's relative to it's finishing point-in-time minus the given time-offset.
-  */
+   */
   set currentTimeOffset(timeOffset: duration.Duration) {
     const timePoint = (timeOffset >= 0)
                     ? timeOffset + this.startTime
@@ -330,7 +373,7 @@ export class ChartView implements timeline_controller.ITimelineChartController,
    *
    * @remarks
    *   Practical to suspend playback when there isn't any remaining time.
-  */
+   */
   public get remainingTimeOffset(): duration.Duration {
     return this.finishTime - this.currentTime;
   }
@@ -341,7 +384,7 @@ export class ChartView implements timeline_controller.ITimelineChartController,
    * @todo
    *   This is based on the chart view's visible range. However, that needs to change
    *   to be the start time of the recording session.
-  */
+   */
   public get startTime(): date_time.TimePoint {
     return this.timelineAxis.visibleRangeLimit.min;
   }
@@ -356,7 +399,7 @@ export class ChartView implements timeline_controller.ITimelineChartController,
    * @todo
    *   This is based on the chart view's visible range. However, that needs to change
    *   to be the finishing point-in-time of the recording session or the latest point-in-time
-  */
+   */
   public get finishTime(): date_time.TimePoint {
     return this.timelineAxis.visibleRangeLimit.max;
   }
@@ -368,7 +411,7 @@ export class ChartView implements timeline_controller.ITimelineChartController,
    *   When the data for the chart view's current time is loaded into its data-series,
    *   then the chart view is ready for playback. Otherwise, playback is suspended until the data
    *   of each of its data-series are loaded at which point the chart view is ready for playback.
-  */
+   */
   public get isReadyForPlayback(): boolean {
     return this.isTimePointLoaded(this.currentTime);
   }
@@ -382,7 +425,7 @@ export class ChartView implements timeline_controller.ITimelineChartController,
    *
    * @remarks
    *   The shift amount can be negative to be an earlier moment.
-  */
+   */
   public shiftCurrentTime(shiftAmount: duration.Duration): timeline_controller.ChangeCurrentTime {
     this.currentTime = this.currentTime + shiftAmount;
 
@@ -404,7 +447,7 @@ export class ChartView implements timeline_controller.ITimelineChartController,
    *   Might have to consider a mechanism which allows gaps to exist, since if users were to jump
    *   to varying points-in-time which aren't contiguous at a frequent pace then this might
    *   introduce gaps once we add a mechanism to unload a leading or trailing segments.
-  */
+   */
   private isTimePointLoaded(timePoint: date_time.TimePoint): boolean {
     const timeRange = this.timelineAxis.getMaximumRange();
 
@@ -429,13 +472,142 @@ export class ChartView implements timeline_controller.ITimelineChartController,
    *   In those situations the mid-point position cannot be used, rather a different computation is
    *   required as to shift the chart view's current time. Probably by detecting the mouse
    *   movements for horizontal displacements then computing a time-offset based on that.
-  */
+   */
   private onTimelineVisibleRangeChanged(args?: VisibleRangeChangedArgs): void {
     const visibleRange = (args)
                        ? args.visibleRange
                        : this.timelineAxis.visibleRange;
 
     this.currentTime = (visibleRange.min + visibleRange.max)/2;
+  }
+
+  /**
+   * Adds a lane for annotations to the chart.
+   *
+   * @remarks
+   *   The annotations are placed at the top of the chart so that within the chart's visible range
+   *   the symbols/icons of annotations will appear.
+   *
+   *   Additionally, this lane is also used by the chart's overview such that all annotations can
+   *   be viewed, with a restriction of those within chart view's visible range limits.
+   */
+  private addAnnotationsLane(): void {
+    const axis =
+        new NumericAxis(
+              this.chart.wasmContext,
+              {
+                id: 'annotation',
+                axisTitle: undefined,
+                axisAlignment: EAxisAlignment.Left,
+                autoRange: EAutoRange.Never,
+                maxAutoTicks: 5,
+                visibleRange: new NumberRange(0, 5)
+              }
+            );
+
+    const line = new XyScatterRenderableSeries(
+                       this.chart.wasmContext,
+                       {
+                         dataSeries: this.annotationDataSeries,
+                         xAxisId: this.timelineAxis.id,
+                         yAxisId: axis.id,
+                         stroke: "#50C7E0",
+                         strokeThickness: 3
+                       }
+                     );
+
+    const labelAnnotation =
+      new TextAnnotation({
+            text: 'Annotations',
+            xAxisId: this.timelineAxis.id,
+            yAxisId: axis.id,
+            xCoordinateMode: ECoordinateMode.Relative,
+            yCoordinateMode: ECoordinateMode.DataValue
+          });
+
+    bindAnnotation(axis, labelAnnotation, textLabelOffset);
+
+    this.chart.sciChartSurface.yAxes.add(axis);
+    this.chart.sciChartSurface.renderableSeries.add(line);
+    this.chart.sciChartSurface.annotations.add(labelAnnotation);
+  }
+
+  /**
+   * Adds a vertical child-chart for the given signal definition into the chart.
+   *
+   * @param definition - Signal definition to incorporate into the chart.
+   *
+   * @remarks
+   *   Creates the infrastructure so that when sampling values are fetched that they'll accumulate
+   *   into the corresponding data-series.
+   *
+   * @todo
+   *   For the moment, the first 8 signal definitions are visible in the chart. However, we'll add
+   *   the capability so that users can select which ones are to be visible (possibly with a limit).
+   */
+  private loadDefinition(definition: eeg_readings.SignalDefinition): void {
+    const physicalDistance = definition.physicalRange.max - definition.physicalRange.min;
+    const physicalMidpoint = definition.physicalRange.min + (physicalDistance / 2);
+    const visibleSegment   = physicalDistance / 16;
+
+    const axis =
+        new NumericAxis(
+              this.chart.wasmContext,
+              {
+                id: definition.id,
+                axisTitle: undefined,
+                axisAlignment: EAxisAlignment.Left,
+                autoRange: EAutoRange.Never,
+                maxAutoTicks: 5,
+                visibleRange: new NumberRange(physicalMidpoint - visibleSegment, physicalMidpoint + visibleSegment)
+              }
+            );
+
+    const dataSeries = new XyDataSeries(
+                              this.chart.wasmContext,
+                              {
+                                dataIsSortedInX: false,
+                                isSorted: false,
+                                containsNaN: false
+                              });
+
+    const line = new FastLineRenderableSeries(
+                      this.chart.wasmContext,
+                      {
+                        dataSeries: dataSeries,
+                        xAxisId: this.timelineAxis.id,
+                        yAxisId: axis.id,
+                        stroke: "#50C7E0",
+                        strokeThickness: 3
+                      }
+                    );
+
+    if (this.chart.sciChartSurface.yAxes.size() < 9) {
+      const labelAnnotation =
+        new TextAnnotation({
+              text: definition.label,
+              xAxisId: this.timelineAxis.id,
+              yAxisId: axis.id,
+              xCoordinateMode: ECoordinateMode.Relative,
+              yCoordinateMode: ECoordinateMode.DataValue
+            });
+
+      bindAnnotation(axis, labelAnnotation, textLabelOffset);
+
+      const annotations: AnnotationBase[] = [];
+
+      annotations.push(labelAnnotation);
+
+      if (this.chart.sciChartSurface.yAxes.size() > 0) {
+        annotations.push(makeGraphSeparator(this.timelineAxis.id, axis));
+      }
+
+      this.chart.sciChartSurface.yAxes.add(axis);
+      this.chart.sciChartSurface.renderableSeries.add(line);
+      this.chart.sciChartSurface.annotations.add(...annotations);
+    }
+
+    this.dataSeries.push(dataSeries);
   }
 
   /**
@@ -492,9 +664,7 @@ function bindAnnotation(axis: NumericAxis,
   annotation.y2 = annotation.y1;
 
   axis.visibleRangeChanged.subscribe((args) => {
-    if (!args) return;
-
-    annotation.y1 = args.visibleRange.max + offset;
+    annotation.y1 = (args?.visibleRange.max ?? 0) + offset;
     annotation.y2 = annotation.y1;
   });
 }
@@ -516,10 +686,10 @@ function makeTimelineAxis(wasmContext: TSciChart,
   return new NumericAxis(
                wasmContext,
                {
-                 id: "timeline",
+                 id: 'timeline',
                  autoRange: EAutoRange.Never,
                  axisAlignment: EAxisAlignment.Top,
-                 axisTitle: '',
+                 axisTitle: undefined,
                  autoTicks: false,
                  labelProvider: new TimelineLabelProvider(),
                  majorDelta: duration.minutesToDuration(1),
@@ -549,79 +719,4 @@ function makeGraphSeparator(timelineAxisId: string,
   bindAnnotation(axis, separator, 0);
 
   return separator;
-}
-
-function loadDefinition(chart: TWebAssemblyChart,
-                       definition: eeg_readings.SignalDefinition): void {
-  const physicalDistance = definition.physicalRange.max - definition.physicalRange.min;
-  const physicalMidpoint = definition.physicalRange.min + (physicalDistance / 2);
-  const visibleSegment   = physicalDistance / 16;
-
-  const axis =
-      new NumericAxis(
-            chart.wasmContext,
-            {
-              id: definition.id,
-              axisTitle: '',
-              axisAlignment: EAxisAlignment.Left,
-              autoRange: EAutoRange.Always,
-              maxAutoTicks: 5,
-              visibleRange: new NumberRange(physicalMidpoint - visibleSegment, physicalMidpoint + visibleSegment)
-            }
-          );
-
-  const timelineAxisId = chart.sciChartSurface.xAxes.get(0).id;
-
-  const labelAnnotation =
-    new TextAnnotation({
-          text: definition.label,
-          // x: 0.0,
-          // y: 0.0,
-          xAxisId: timelineAxisId,
-          yAxisId: axis.id,
-          xCoordinateMode: ECoordinateMode.Relative,
-          yCoordinateMode: ECoordinateMode.DataValue
-        });
-
-  bindAnnotation(axis, labelAnnotation, -0.5);
-
-  const annotations = new Array<AnnotationBase>();
-
-  annotations.push(labelAnnotation);
-
-  if (chart.sciChartSurface.yAxes.size() > 0) {
-    annotations.push(makeGraphSeparator(timelineAxisId, axis));
-  }
-
-  const dataSeries = new XyDataSeries(
-                            chart.wasmContext,
-                            {
-                              dataIsSortedInX: false,
-                              isSorted: false,
-                              containsNaN: false
-                            });
-
-  const line = new FastLineRenderableSeries(
-                     chart.wasmContext,
-                     {
-                       dataSeries: dataSeries,
-                       xAxisId: timelineAxisId,
-                       yAxisId: axis.id,
-                       stroke: "#50C7E0",
-                       strokeThickness: 3
-                     }
-                   );
-
-  chart.sciChartSurface.renderableSeries.add(line);
-
-  chart.sciChartSurface.annotations.add(...annotations);
-}
-
-function findDataSeries(chartSurface: SciChartSurface,
-                        signalId: eeg_readings.SignalId): XyDataSeries | undefined {
-  const series = chartSurface.renderableSeries.getById(signalId);
-
-  return (series.dataSeries instanceof XyDataSeries)
-       ? series.dataSeries as XyDataSeries
-       : undefined;
 }

@@ -7,7 +7,17 @@ export const enum LoadSequence {
   Latest = 'latest'
 }
 
-export interface RecordingSessionFolderDetails {
+/**
+ * A folder on a cloud-storage provider.
+ *
+ * @todo
+ *   Declare this as part of the storage/models code base since it's generic concept applicable
+ *   other cloud-storage technologies from AWS S3, Azure's blob storage, Google.
+ *
+ *   A commonality is to make folder a URL along with a kind and for each kind of solution there
+ *   is meta-data to incorporate such as AWS S3 with region.
+ */
+export interface RecordingSessionFolder {
   region: string;
   bucket: string;
   folder: string;
@@ -22,8 +32,8 @@ export const enum KindRequestMessage {
 
 export interface InitializeRequestMessage {
   kind: KindRequestMessage.Initialize;
-  storageCredentials?: AwsCredentialIdentity;
-  folderDetails: RecordingSessionFolderDetails;
+  sessionCredentials?: AwsCredentialIdentity;
+  folderDetails: RecordingSessionFolder;
   loadSequence: LoadSequence;
 }
 
