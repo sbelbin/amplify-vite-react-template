@@ -153,7 +153,6 @@ export class TimelineController implements ITimelineController
   public onChangeCurrentTime(event: ChangeCurrentTimeEvent) {
     if (!this.isVideoPlaying()) {
       this._currentTimeOffset = event.timeOffset;
-      console.debug(`The current time-offset is ${this._currentTimeOffset}.`);
       this.setVideoCurrentTime();
     }
   }
