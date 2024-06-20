@@ -73,7 +73,7 @@ function SessionsSelectPage(props: PageProperties) {
         return;
       }
 
-      navigate('/sessions/id');
+      navigate(`/sessions/${recording.id}`);
     },
     [navigate]);
 

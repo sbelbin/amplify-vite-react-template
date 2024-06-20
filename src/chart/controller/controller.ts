@@ -60,13 +60,13 @@ export class ChartController {
               folderDetails: RecordingSessionFolder,
               loadSequence: LoadSequence) {
     this.view = new ChartView(chart, timelineController);
-    this.dataSource = new Worker(new URL('../../workers/chart_loader.ts', import.meta.url), {type: 'module'});
+    this.dataSource = new Worker(new URL('../../workers/chart_data_source.ts', import.meta.url), {type: 'module'});
 
     this.disposePromise = new Promise<void>((resolve) =>
                                 this.disposeResolver = resolve);
 
     // @todo - Identify a means to report an error back to the users ???
-    // this.loader.onerror = (event: ErrorEvent) => {
+    // this.dataSource.onerror = (event: ErrorEvent) => {
     // }
 
     this.dataSource.onmessage = (event: MessageEvent<ResponseMessage>) => {

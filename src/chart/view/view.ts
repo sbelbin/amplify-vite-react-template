@@ -40,7 +40,8 @@ import {
   AnnotationBase,
   XyScatterRenderableSeries,
   LeftAlignedOuterVerticallyStackedAxisLayoutStrategy,
-  SciChartJsNavyTheme
+  SciChartJsNavyTheme,
+  SciChartOverview
 } from 'scichart';
 
 import { NumericAxis } from 'scichart/Charting/Visuals/Axis/NumericAxis';
@@ -50,6 +51,8 @@ import { TWebAssemblyChart } from 'scichart/Charting/Visuals/SciChartSurface';
 import { TSciChart } from 'scichart/types/TSciChart';
 
 import { createImageAsync } from 'scichart/utils/imageUtil';
+import { TimelineOverviewModifier } from "./timeline_overview_modifier";
+import { SciChartNestedOverview } from "scichart-react";
 
 const textLabelOffset = -2.0;
 
@@ -121,24 +124,24 @@ export class ChartView implements timeline_controller.ITimelineChartController,
     this.chart.sciChartSurface.chartModifiers.add(
       // new AnnotationTooltipModifier(),
       new TimelineChartModifier(this),
-      // new YAxisDragModifier(),
+      new YAxisDragModifier(),
       new XAxisDragModifier(),
       new RubberBandXyZoomModifier( { xyDirection: EXyDirection.XDirection, executeOn: EExecuteOn.MouseRightButton } ),
       new MouseWheelZoomModifier( { xyDirection: EXyDirection.XDirection } ),
-      // new ZoomExtentsModifier(),
-      // new ZoomPanModifier()
+      new ZoomExtentsModifier(),
+      new ZoomPanModifier()
     );
 
-    // SciChartOverview.create(
-    //   this.chart.sciChartSurface,
-    //   "overview",
-    //   {
-    //     customRangeSelectionModifier: new TimelineOverviewModifier(this),
-    //     mainAxisId: this.timelineAxis.id,
-    //     // secondaryAxisId: this.sensors[0].id,
-    //     theme: new SciChartJsNavyTheme()
-    //   }
-    // );
+    SciChartOverview.create(
+      this.chart.sciChartSurface,
+      "overview",
+      {
+        customRangeSelectionModifier: new TimelineOverviewModifier(this),
+        mainAxisId: this.timelineAxis.id,
+        secondaryAxisId: this.chart.sciChartSurface.yAxes.get(0).id,
+        theme: new SciChartJsNavyTheme()
+      }
+    );
 
     this.timelineController.addChart(this);
   }
@@ -500,8 +503,16 @@ export class ChartView implements timeline_controller.ITimelineChartController,
                 axisTitle: undefined,
                 axisAlignment: EAxisAlignment.Left,
                 autoRange: EAutoRange.Never,
+                autoTicks: false,
                 maxAutoTicks: 5,
-                visibleRange: new NumberRange(0, 5)
+                majorDelta: 1,
+                minorDelta: 1,
+                drawLabels: false,
+                drawMajorBands: false,
+                drawMajorGridLines: false,
+                drawMajorTickLines: false,
+                drawMinorGridLines: false,
+                drawMinorTickLines: false
               }
             );
 
@@ -557,7 +568,7 @@ export class ChartView implements timeline_controller.ITimelineChartController,
                 id: definition.id,
                 axisTitle: undefined,
                 axisAlignment: EAxisAlignment.Left,
-                autoRange: EAutoRange.Never,
+                autoRange: EAutoRange.Always,
                 maxAutoTicks: 5,
                 visibleRange: new NumberRange(physicalMidpoint - visibleSegment, physicalMidpoint + visibleSegment)
               }

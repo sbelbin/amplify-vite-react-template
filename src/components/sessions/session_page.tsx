@@ -16,7 +16,10 @@ import {
   useState
 } from 'react';
 
-import { useNavigate } from 'react-router-dom';
+import {
+  useNavigate,
+  useParams
+} from 'react-router-dom';
 
 import {
   Col,
@@ -27,15 +30,68 @@ import {
   ToastContainer
 } from 'react-bootstrap';
 
-import { EThemeProviderType, SciChartJsNavyTheme, chartBuilder } from "scichart";
+import {
+  chartBuilder,
+  EThemeProviderType
+} from "scichart";
 
 import { SciChartNestedOverview, SciChartReact } from "scichart-react";
+import { loadAnnotationImage } from '../../chart/view';
 
 interface PageProperties {
   isUserLoggedIn: () => boolean;
-  recordingId: RecordingId;
 }
 
+/**
+ * A page presenting a recording session that display a chart & video from a
+ * recording session.
+ *
+ * @param props Session page properties.
+ * @returns JSX.Element of the session page.
+ *
+ * @todo Verify the page's URL with the guys:
+ *   @RodionSmilovskyi & @IsaiasGonzalez
+ *
+ *   Since the session selection page is '/sessions/select', then this page be :
+ *     '/sessions/:recording_id'
+ *     '/sessions/id/:id'
+ *
+ * @todo Use application context.
+ *   Need to ensure that user is logged-in by using the application context, since the current
+ *   approach with the page's properties isn't viable at this time. Especially, when pasting
+ *   the URL of /sessions/:recording_id.
+ *
+ * @todo Indicator of a live-feed recording session.
+ *   Provide an indication that users are watching a recording session that is a live-feed.
+ *
+ * @todo Improve error messaging.
+ *   When something goes awry such as unable to fetch a segment of the recording, or unable to
+ *   playback the video then the application needs to report back to the user about the issue.
+ *
+ * @todo Provide controls to start/finish.
+ *   Allow users to jump to the start or to the finish of the recording session.
+ *
+ * @todo Provide a control to jump to a point-in-time.
+ *   Allow users to provide a specific point-in-time that lies within the start & finish of the
+ *   recording session.
+ *
+ * @todo Provide controls to jump to an time-offset.
+ *   Allow users to provide a specific time-offset that lies within the start & finish of the
+ *   recording session.
+ *
+ * @todo Toggle point-in-time / time-offset.
+ *   Allow users to toggle between point-in-time and time-offset.
+ *
+ * @todo Toggle time-zone.
+ *   Allow users to toggle the time-zone only meaningful when in point-in-time display.
+ *   Top choices are recording session site, user's locale or UTC.
+ *
+ * @todo Provide a control jump to live-feed.
+ *   When it's a live-feed and the user navigates to an earlier point-in-time, then provide
+ *   a means that allows them to jump to the current point-in-time.
+ *
+ *   This is akin to jumping to the finish of the recording session.
+ */
 function SessionPage(props: PageProperties) {
   const [errorTitle, setErrorTitle] = useState('');
   const [errorMessage, setErrorMessage] = useState('');
@@ -44,11 +100,17 @@ function SessionPage(props: PageProperties) {
 
   const navigate = useNavigate();
 
+  const { recordingId } = useParams();
+
   useEffect(() => {
-      // @todo - Mechanism ensuring that the session is authenticated.
-      (props.isUserLoggedIn === undefined) && navigate('/');
-    },
-    [navigate, props]);
+    console.debug(`The user is logged-in ${props.isUserLoggedIn()}`);
+
+    // (!props.isUserLoggedIn() || recordingId === undefined)
+    (recordingId === undefined)
+    &&
+    navigate('/');
+  },
+  [navigate, props, recordingId]);
 
   let timelineController: TimelineController | undefined;
   let chartController: ChartController | undefined;
@@ -57,9 +119,11 @@ function SessionPage(props: PageProperties) {
 
   const initChart = async (rootElement: string | HTMLDivElement) => {
 
+    const loadImagesPromise = loadAnnotationImage();
+
     const sessionCredentialsPromise = authentication.sessionCredentials();
 
-    const recording = await fetchRecordingById(props.recordingId);
+    const recording = await fetchRecordingById(recordingId!);
 
     const sessionCredentials = await sessionCredentialsPromise;
 
@@ -116,6 +180,8 @@ function SessionPage(props: PageProperties) {
 
     const { wasmContext, sciChartSurface } = await chartPromise;
 
+    await loadImagesPromise;
+
     chartController = new ChartController({ wasmContext, sciChartSurface },
                                           timelineController,
                                           sessionCredentials,
@@ -165,6 +231,10 @@ function SessionPage(props: PageProperties) {
         <div>
           {status}
         </div>
+        <div
+          id="overview"
+          style={{ width: 1200, height: 50 }}
+        />
         <SciChartReact
           style={{ width: 1200, height: 500 }}
           fallback={

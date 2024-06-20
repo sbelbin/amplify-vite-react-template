@@ -13,6 +13,32 @@ interface NavigationProperties {
   onUserLoggedOut: () => void;
 }
 
+/**
+ * Determine the links & menu options which are accessible in the site navigation bar, which are
+ * based on the current page and state (such as user login).
+ *
+ * @param props - The site's navigation bar properties.
+ * @returns The JSX.Element of the this navigation bar.
+ *
+ * @remarks
+ *   Scenarios to describe how this site navigation bar shall behave:
+ *    a) Given that the user hasn't logged into the application
+ *         and the current page is the login page
+ *        then the site navigation bar presents only these choices:
+ *             - home
+ *             - sign-up
+ *             - confirm sign-up
+ *         and login is hidden since there is no use to navigate to itself
+ *         and logout is hidden since the pre-requisite of a logged-in user doesn't apply.
+ *
+ *    b) Given that the user is logged into the application
+ *         and the current page is the home page
+ *        then the site navigation bar presents only these choices:
+ *             - logout
+ *             - select sessions
+ *         and home is hidden since there is no use to navigate to itself
+ *         and login, sign-up, confirm sign-up are hidden since the pre-requisite of a logged-out user doesn't apply.
+ */
 function SiteNavigationBar(props: NavigationProperties) {
   const location = useLocation();
 
@@ -20,26 +46,15 @@ function SiteNavigationBar(props: NavigationProperties) {
   const isUserLoginPage         = location.pathname === '/users/login';
   const isUserSignUpPage        = location.pathname === '/users/sign_up';
   const isUserConfirmSignUpPage = location.pathname === '/users/confirm_sign_up';
+  const isSessionsSelectionPage = location.pathname === '/sessions/select';
 
-  //
-  // Determine the links & menu options which are accessible the navigation bar, which are
-  // based on the current page and state (such as user login).
-  //
-  // For example:
-  //  a) Given that the user hasn't logged into the application
-  //       and the current page is the login page
-  //      then the site navigation bar presents only these choices:
-  //           - home
-  //           - sign-up
-  //           - confirm sign-up
-  //       and the login & logout choices are shown since there aren't
-  //           meaningful for the current situation.
-  //
+  const isUserLoggedIn = props.isUserLoggedIn();
   const showHomeLink = !isHomePage;
-  const showUserLogoutLink = props.isUserLoggedIn();
-  const showUserLoginLink = !isUserLoginPage && !showUserLogoutLink;
-  const showUserSignUpLink = !isUserSignUpPage && !showUserLogoutLink;
-  const showUserConfirmSignUpLink = !isUserConfirmSignUpPage && !showUserLogoutLink;
+  const showUserLogoutLink = isUserLoggedIn;
+  const showUserLoginLink = !isUserLoginPage && !isUserLoggedIn;
+  const showUserSignUpLink = !isUserSignUpPage && !isUserLoggedIn;
+  const showUserConfirmSignUpLink = !isUserConfirmSignUpPage && !isUserLoggedIn;
+  const showSessionsSelectionLink = !isSessionsSelectionPage && isUserLoggedIn;
 
   const handleUserLogout = () => {
     AWS_Auth.signOut()
@@ -112,10 +127,13 @@ function SiteNavigationBar(props: NavigationProperties) {
               {showUserConfirmSignUpLink && (
                 <Nav.Link href="/users/confirm_sign_up" >Confirm Sign-Up</Nav.Link>
               )}
+              {showSessionsSelectionLink && (
+                <Nav.Link href="/sessions/select" >Select Session</Nav.Link>
+              )}
             </Nav>
           </Offcanvas.Body>
         </Navbar.Offcanvas>
-        {props.isUserLoggedIn() && (
+        {showUserLogoutLink && (
           <Nav.Item>
             <Nav.Item>
               {props.userName}

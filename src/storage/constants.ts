@@ -13,13 +13,10 @@ const compareLastModified = (lhs: File, rhs: File, isDescending: boolean) => {
   const lhsLastModified = lhs.LastModified?.getTime() ?? 0;
   const rhsLastModified = rhs.LastModified?.getTime() ?? 0;
 
-  const comparison = lhsLastModified - rhsLastModified;
-
   return isDescending
-       ? comparison * -1
-       : comparison;
+       ? rhsLastModified - lhsLastModified
+       : lhsLastModified - rhsLastModified;
 }
-
 
 export const orderByLastModifiedAscending: ListFilesOrderBy = (lhs: File, rhs: File) => {
   return compareLastModified(lhs, rhs, false);

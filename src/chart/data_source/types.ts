@@ -94,3 +94,8 @@ export type OnDefinitionsReady = (definitions: eeg_readings.SignalDefinitions) =
  * @param segment - A segment of the recording session.
  */
 export type OnSegmentReady = (segment: eeg_readings.Segment) => void;
+
+/**
+ * Callback function for the chart data source to invoke when it has disposed its resources.
+ */
+export type OnDisposed = () => void;

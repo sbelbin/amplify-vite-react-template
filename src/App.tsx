@@ -48,23 +48,25 @@ function App() {
     return !!userName;
   }
 
-  //
-  // Application callback indicating when a user is logged into the application.
-  //
-  // \notes
-  //   The user name is the underlying unique identifier assigned to a person that is
-  //   stored in the user pool. In principal a user could login using an E-mail address
-  //   or a phone number. However, it's their user name that the application presents in
-  //   the site navigation bar.
-  //
+  /**
+   * Application callback indicating when a user is logged into the application.
+   *
+   * @param userName - User name to assign to the context.
+   *
+   * @remarks
+   *   The user name is the underlying unique identifier assigned to a person that is
+   *   stored in the user pool. In principal a user could login using an E-mail address
+   *   or a phone number. However, it's their user name that the application presents in
+   *   the site navigation bar.
+   */
   function onUserLoggedIn(userName: string): void {
     setUserName(userName);
     navigate('/sessions/select');
   }
 
-  //
-  // Application callback indicating when the user has logged out from the application.
-  //
+  /**
+   * Application callback indicating when the user has logged out from the application.
+   */
   function onUserLoggedOut(): void {
     setUserName('');
     navigate('/users/logged_out');
@@ -110,11 +112,8 @@ function App() {
             element={<SessionsSelectPage isUserLoggedIn={isUserLoggedIn} />}
           />
           <Route
-            path="/sessions/id"
-            element={<SessionPage
-                        isUserLoggedIn={isUserLoggedIn}
-                        recordingId={'f11a57e6-50f2-49d4-83bc-a6d8927e518a'} // main -  {'567e4583-2e70-4a47-b360-1e2650c0673d'}, {'57d7e1f4-5c4e-4dda-8e63-ef77db839690'}
-                     />}
+            path="/sessions/:recordingId"
+            element={<SessionPage isUserLoggedIn={isUserLoggedIn} />}
           />
         </Routes>
       </Row>

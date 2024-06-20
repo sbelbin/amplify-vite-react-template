@@ -27,10 +27,14 @@ self.onmessage = (event: MessageEvent<RequestMessage>) => {
           self.postMessage(
             Object.assign(segment, { kind: KindResponseMessage.SegmentReady }));
 
+        const onDisposed = () =>
+          self.postMessage({ kind: KindResponseMessage.Disposed });
+
         chartDataSource = new ChartDataSource(storage.connectWithCredentials(msg.folderDetails.region, msg.sessionCredentials),
                                               msg.folderDetails,
                                               onDefinitionsReady,
                                               onSegmentReady,
+                                              onDisposed,
                                               msg.loadSequence);
       }
       break;

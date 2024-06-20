@@ -1,6 +1,7 @@
 import {
   LoadSequence,
   OnDefinitionsReady,
+  OnDisposed,
   OnSegmentReady,
   RecordingSessionFolder
 } from './types';
@@ -61,6 +62,7 @@ export class ChartDataSource {
   private readonly folderDetails: RecordingSessionFolder;
   private readonly onDefinitionsReady: OnDefinitionsReady;
   private readonly onSegmentReady: OnSegmentReady;
+  private readonly onDisposed: OnDisposed;
   private readonly listFilesOrderBy: storage.ListFilesOrderBy;
   private filesLoaded: Set<string> = new Set<string>();
   private monitorFolderInterval?: number;
@@ -71,11 +73,13 @@ export class ChartDataSource {
               folderDetails: RecordingSessionFolder,
               onDefinitionsReady: OnDefinitionsReady,
               onSegmentReady: OnSegmentReady,
+              onDisposed: OnDisposed,
               loadSequence: LoadSequence = LoadSequence.Earliest) {
     this.storageClient = storageClient;
     this.folderDetails = folderDetails;
     this.onDefinitionsReady = onDefinitionsReady;
     this.onSegmentReady = onSegmentReady;
+    this.onDisposed = onDisposed;
     this.listFilesOrderBy = (loadSequence == LoadSequence.Earliest)
                           ? storage.orderByLastModifiedAscending
                           : storage.orderByLastModifiedDescending;
@@ -83,6 +87,7 @@ export class ChartDataSource {
 
   public dispose() {
     this.resetMonitorFolderTimer();
+    this.onDisposed();
   }
 
   public start(monitorFolderInterval: number) {
