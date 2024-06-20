@@ -13,7 +13,7 @@ import * as date_time from '../../utilities/date_time';
 import * as duration from '../../utilities/duration';
 import * as timeline_controller from '../../timeline_controller';
 
-import annotationImage from '../../../public/img/annotation.png';
+import annotationImage from '/img/annotation.png';
 
 import {
   AxisMarkerAnnotation,
