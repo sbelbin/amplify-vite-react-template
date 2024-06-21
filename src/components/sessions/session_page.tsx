@@ -1,7 +1,8 @@
 import * as authentication from '../../authentication';
 
+import { loadAnnotationImage } from '../../chart/view';
+
 import { fetchRecordingById } from '../../models/recordings/fetch_recording_by_id';
-import { RecordingId } from '../../models/recordings';
 
 import { ChartController } from '../../chart/controller/controller';
 import {
@@ -35,8 +36,7 @@ import {
   EThemeProviderType
 } from "scichart";
 
-import { SciChartNestedOverview, SciChartReact } from "scichart-react";
-import { loadAnnotationImage } from '../../chart/view';
+import { SciChartReact } from 'scichart-react';
 
 interface PageProperties {
   isUserLoggedIn: () => boolean;

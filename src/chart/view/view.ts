@@ -6,7 +6,7 @@ import {
   RestoreTimelineNavigationBehavior
 } from "./types";
 
-// import { TimelineOverviewModifier } from "./timeline_overview_modifier";
+import { TimelineOverviewModifier } from "./timeline_overview_modifier";
 
 import * as eeg_readings from '../../models/eeg_readings';
 import * as date_time from '../../utilities/date_time';
@@ -28,7 +28,6 @@ import {
   MouseWheelZoomModifier,
   NumberRange,
   RubberBandXyZoomModifier,
-//  SciChartJsNavyTheme,
   TextAnnotation,
   VerticalLineAnnotation,
   XAxisDragModifier,
@@ -40,19 +39,16 @@ import {
   AnnotationBase,
   XyScatterRenderableSeries,
   LeftAlignedOuterVerticallyStackedAxisLayoutStrategy,
-  SciChartJsNavyTheme,
-  SciChartOverview
+  SciChartJsNavyTheme
 } from 'scichart';
 
 import { NumericAxis } from 'scichart/Charting/Visuals/Axis/NumericAxis';
-// import { SciChartOverview } from 'scichart/Charting/Visuals/SciChartOverview';
+import { SciChartOverview } from 'scichart/Charting/Visuals/SciChartOverview';
 import { TWebAssemblyChart } from 'scichart/Charting/Visuals/SciChartSurface';
 
 import { TSciChart } from 'scichart/types/TSciChart';
 
 import { createImageAsync } from 'scichart/utils/imageUtil';
-import { TimelineOverviewModifier } from "./timeline_overview_modifier";
-import { SciChartNestedOverview } from "scichart-react";
 
 const textLabelOffset = -2.0;
 
@@ -80,8 +76,11 @@ export class ChartView implements timeline_controller.ITimelineChartController,
   private readonly timelineController: timeline_controller.ITimelineController;
   private onRestorePlayback?: timeline_controller.RestorePlayback;
   private restoreBehavior?: RestoreTimelineNavigationBehavior;
+  private definitions?: eeg_readings.SignalDefinitions;
   private readonly annotationDataSeries: XyDataSeries;
   private dataSeries: XyDataSeries[] = [];
+
+  private chartOverview?: SciChartOverview;
 
   constructor(chart: TWebAssemblyChart,
               timelineController: timeline_controller.ITimelineController) {
@@ -130,17 +129,6 @@ export class ChartView implements timeline_controller.ITimelineChartController,
       new MouseWheelZoomModifier( { xyDirection: EXyDirection.XDirection } ),
       new ZoomExtentsModifier(),
       new ZoomPanModifier()
-    );
-
-    SciChartOverview.create(
-      this.chart.sciChartSurface,
-      "overview",
-      {
-        customRangeSelectionModifier: new TimelineOverviewModifier(this),
-        mainAxisId: this.timelineAxis.id,
-        secondaryAxisId: this.chart.sciChartSurface.yAxes.get(0).id,
-        theme: new SciChartJsNavyTheme()
-      }
     );
 
     this.timelineController.addChart(this);
@@ -245,12 +233,17 @@ export class ChartView implements timeline_controller.ITimelineChartController,
   }
 
   /**
-   * Load lanes into the chart view based on the signal definitions used during the recording session.
+   * Load lanes into the chart view based on the signal definitions used during the recording
+   * session.
    *
    * @param definitions - The signal definitions.
    */
-  public loadDefinitions(definitions: eeg_readings.SignalDefinitions): void {
-    definitions.forEach((definition) => this.loadDefinition(definition));
+  public async loadDefinitions(definitions: eeg_readings.SignalDefinitions): Promise<void> {
+    if (this.definitions) return;
+
+    this.definitions = definitions;
+    this.definitions.forEach((definition) => this.loadDefinition(definition));
+    await this.createOverview();
   }
 
   /**
@@ -655,6 +648,44 @@ export class ChartView implements timeline_controller.ITimelineChartController,
       this.onRestorePlayback = undefined;
       this.restoreBehavior = undefined;
     }
+  }
+
+  /**
+   * Create the chart's overview.
+   *
+   * @remarks
+   *   This allows users to efficiently navigate to a different point-in-time within the recording
+   *   session.
+   *
+   *   Additionally, provides users with the capability to extent/contract the chart view's visible
+   *   range.
+   *
+   * @todo
+   *   Creation of the chart's overview is deferred until this point because creating it beforehand
+   *   with only the annotation axis, since the chart's overview only extends when annotation
+   *   points are defined within the annotation axis. Since, these are infrequent the chart's
+   *   overview won't expand.
+   *
+   *   A workaround for the chart's overview to extend it to bind it to a sampling values axis.
+   *   Whereas, our preference is to the annotation axis but to extend based on the timeline axis.
+   *
+   *   Follow-up with the folks at SciChart on the possibility of the chart overview associated to
+   *   the annotations axis but in which the timeline axis extends. Otherwise, a combination of
+   *   the annotation + sampling values axes.
+   */
+  private async createOverview(): Promise<void> {
+    if (this.chartOverview) return;
+
+    this.chartOverview = await SciChartOverview.create(
+      this.chart.sciChartSurface,
+      'overview',
+      {
+        customRangeSelectionModifier: new TimelineOverviewModifier(this),
+        mainAxisId: this.timelineAxis.id,
+        secondaryAxisId: this.chart.sciChartSurface.yAxes.get(2).id,
+        theme: new SciChartJsNavyTheme()
+      }
+    );
   }
 }
 
