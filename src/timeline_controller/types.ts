@@ -21,6 +21,9 @@ export interface ITimelineController {
   get timeRange(): date_time.TimePointRange;
 
   get currentTime(): date_time.TimePoint;
+  set currentTime(timePoint: date_time.TimePoint);
+
+  get currentTimeOffset(): duration.Duration;
   set currentTimeOffset(timeOffset: duration.Duration);
 
   addChart(chart: ITimelineChartController): void;
@@ -31,11 +34,22 @@ export interface ITimelineController {
 
   startTimelineNavigation(sourceId: SourceId): RestorePlayback;
 
+  /**
+   * Callback that instances of the ITimelineSourceFeed shall invoke so that the
+   * timeline-controller is aware that its current time has changed.
+   *
+   * @param event - Details of the feed's current point-in-time/time-offset.
+   *
+   * @remarks
+   *   When the feed is the timeline=controller's current source, then the
+   *   timeline-controller synchronizes the other feeds to reflect that same
+   *   point-in-time.
+   */
   onChangeCurrentTime(event: ChangeCurrentTimeEvent): void;
 }
 
 export interface ITimelineChartController {
-  readonly sourceId: SourceId;
+  sourceId?: SourceId;
 
   get currentTime(): date_time.TimePoint;
   set currentTime(timePoint: date_time.TimePoint);
@@ -53,31 +67,32 @@ export interface ITimelineChartController {
   shiftCurrentTime(shiftAmount: duration.Duration): ChangeCurrentTime;
 }
 
-//
-// @todo
-//   This is a proposed interface which can be applied to different kinds of feeds to the
-//   timeline controller.
-//
-//   The concept being is that a timeline controller is bound to several of these feeds in which
-//   the timeline controller shall maintains synchronization amongst these feeds so that they all
-//   reflect the same moment in time (time offset/poin-in-time).
-//
-//   The idea being is that a single feed is the source and it's current moment is used as the
-//   reference point.
-//
-// export interface ITimelineFeedController {
-//   get currentTimeOffset(): number;
-//   set currentTimeOffset(timeOffset: number);
-//
-//   get startTimeOffset(): number;
-//   get finishTimeOffset(): number;
-//
-//   get isReadyForPlayback(): boolean;
-//
-//   bindTimelineController(timeLineController: ITimelineController): void;
-//
-//   subscribeToTimelineChanges(callback: OnChangeCurrentTimeEvent): void;
-//   unsubscribeToTimelineChanges(callback: OnChangeCurrentTimeEvent): void;
-//
-//   shiftCurrentTimeOffset(shiftAmount: number): number;
-// }
+/**
+ * @todo
+ *   Proposed interface of different means to feed the timeline controller.
+ *
+ *   The concept being is that a timeline controller is bound to several of these feeds in which
+ *   the timeline controller maintains these feeds in synch so that they reflect the same
+ *   point-in-time.
+ *
+ *   The crux is that only a single feed is the source for the timeline controller to use as
+ *   the reference point-in-time amongst the various feeds.
+ */
+  export interface ITimelineSourceFeed {
+    sourceId?: SourceId;
+
+    get currentTime(): date_time.TimePoint;
+    set currentTime(timePoint: date_time.TimePoint);
+
+    get currentTimeOffset(): duration.Duration;
+    set currentTimeOffset(timeOffset: duration.Duration);
+
+    get remainingTimeOffset(): duration.Duration;
+
+    get startTime(): date_time.TimePoint;
+    get finishTime(): date_time.TimePoint;
+
+    get isReadyForPlayback(): boolean;
+
+    shiftCurrentTime(shiftAmount: duration.Duration): ChangeCurrentTime;
+}

@@ -24,7 +24,7 @@ import * as duration from '../utilities/duration';
  *   then this timeline controller shall synchronize video controller to that time offset relative
  *   to that of the chart controller.
  *
- * @todo
+ * @todo Define a common interface for controlling video and chart navigation.
  *   Implement a source controller interface providing properties and methods so that behavior can
  *   be consistent for a video & chart controller. Such that the timeline controller can have many
  *   controllers in which need to be synchronized to a specific time offset/point-in-time.
@@ -34,6 +34,17 @@ import * as duration from '../utilities/duration';
  *
  *   This is practical when adding more different kinds of charts such as ECG
  *   (electro-cardiogram graph) or supplemental video sources such as the patient's surrounding.
+ *
+ * @todo On live-feed the time range should be the latest available time.
+ *   In the case of a live-feed we are using the current time. This isn't technically correct.
+ *   Rather, it's the latest point-in-time uploaded by the VEEGix8 app.
+ *
+ *   The reason is the the chart view represent a point-in-time that is beyond what the sampling
+ *   values that have been uploaded.
+ *
+ *   Therefore, this timeline controller needs to be notified whenever there are changes to the
+ *   latest point-in-time that is available to be loaded into the chart view. Here we might just
+ *   poll the recording session's record about the latest available point-in-time.
  */
 export class TimelineController implements ITimelineController
 {
@@ -56,17 +67,17 @@ export class TimelineController implements ITimelineController
     this.startTime = startTime;
     this.finishTime = finishTime;
 
-    const endTime = this.finishTime ?? Date.now();
-    const time = (referenceTime < this.startTime) ? this.startTime
-               : (referenceTime > endTime)        ? endTime
-               : referenceTime;
+    const timeRange = this.timeRange;
+    const currentTime = (referenceTime < timeRange.min) ? timeRange.min
+                      : (referenceTime > timeRange.max) ? timeRange.max
+                      : referenceTime;
 
-    this._currentTimeOffset = time - this.startTime;
+    this._currentTimeOffset = currentTime - this.startTime;
   }
 
   /**
    * ITimelineController interface
-  */
+   */
   get timeRange(): date_time.TimePointRange {
     return {
               min: this.startTime,
@@ -89,7 +100,7 @@ export class TimelineController implements ITimelineController
    *   playback state after that the specified point-in-time has been applied to both these
    *   controllers.
    */
-  public set currentTime(timePoint: date_time.TimePoint) {
+  set currentTime(timePoint: date_time.TimePoint) {
     const onRestorePlayback = this.pause();
 
     this._currentTimeOffset = timePoint - this.startTime;
@@ -103,7 +114,12 @@ export class TimelineController implements ITimelineController
     return this._currentTimeOffset;
   }
 
+  set currentTimeOffset(timeOffset: duration.Duration) {
+    this._currentTimeOffset = timeOffset;
+  }
+
   addChart(chart: ITimelineChartController): void {
+    chart.sourceId = 1;
     this.chart = chart;
   }
 
@@ -118,6 +134,7 @@ export class TimelineController implements ITimelineController
 
     this.setVideoCurrentTime();
     this.playbackMode = PlaybackModes.Video;
+    this.currentSourceId = 0;
     this.resume();
   }
 
@@ -215,11 +232,11 @@ export class TimelineController implements ITimelineController
    */
   public pause(state: SuspendPlaybackState = SuspendPlaybackState.On): RestorePlayback {
     const isPlaying = this.isPlaying();
-    const sourceId = this.currentSourceId;
+    const restoreSourceId = this.currentSourceId;
 
     if (!isPlaying) {
       return () => {
-        this.currentSourceId = sourceId;
+        this.currentSourceId = restoreSourceId;
         this.playbackMode ^= this.playbackMode & state;
       }
     }
@@ -228,7 +245,7 @@ export class TimelineController implements ITimelineController
     this.pauseVideo();
 
     return () => {
-             this.currentSourceId = sourceId;
+             this.currentSourceId = restoreSourceId;
              this.resume();
              this.playbackMode ^= this.playbackMode & state;
            };
@@ -371,6 +388,7 @@ export class TimelineController implements ITimelineController
   private pauseVideo(): void {
     if (this.isVideoPlaying()) {
       this.video?.pause();
+      console.debug('Pausing the video playback.');
     }
   }
 
@@ -385,6 +403,7 @@ export class TimelineController implements ITimelineController
   {
     if (!this.isVideoPlaying()) {
       this.video?.play();
+      console.debug('Resuming the video playback.');
     }
   }
 }

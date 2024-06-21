@@ -14,6 +14,7 @@ import { TimelineController } from '../../timeline_controller';
 
 import {
   useEffect,
+  useRef,
   useState
 } from 'react';
 
@@ -35,6 +36,8 @@ import {
   chartBuilder,
   EThemeProviderType
 } from "scichart";
+
+import ReactHlsPlayer from 'react-hls-player';
 
 import { SciChartReact } from 'scichart-react';
 
@@ -112,8 +115,11 @@ function SessionPage(props: PageProperties) {
   },
   [navigate, props, recordingId]);
 
-  let timelineController: TimelineController | undefined;
+  const [ timelineController, setTimeLineController ] = useState<TimelineController | undefined>(undefined);
+
   let chartController: ChartController | undefined;
+
+  const playerRef = useRef<HTMLVideoElement>(null);
 
   const [status, setStatus] = useState('');
 
@@ -166,7 +172,7 @@ function SessionPage(props: PageProperties) {
                         ? Date.now()
                         : startTime;
 
-    timelineController = new TimelineController(startTime, finishTime, referenceTime);
+    const timelineController = new TimelineController(startTime, finishTime, referenceTime);
 
     const folderDetails: RecordingSessionFolder = {
       region: 'us-east-1',
@@ -183,12 +189,14 @@ function SessionPage(props: PageProperties) {
     await loadImagesPromise;
 
     chartController = new ChartController({ wasmContext, sciChartSurface },
-                                          timelineController,
+                                          timelineController!,
                                           sessionCredentials,
                                           folderDetails,
                                           loadSequence);
 
-    return { sciChartSurface: chartController.view.chart.sciChartSurface };
+    setTimeLineController(timelineController);
+
+    return { sciChartSurface };
   };
 
   const deleteChart = async () => {
@@ -197,8 +205,25 @@ function SessionPage(props: PageProperties) {
     }
 
     chartController = undefined;
-    timelineController = undefined;
+    setTimeLineController(undefined);
   };
+
+  useEffect(() => {
+      if (!playerRef.current || !timelineController) return;
+
+      const player = playerRef.current!;
+
+      // playerRef.current.src = 'https://ddowt3u7yt71y.cloudfront.net/ivs/v1/730335415888/vavtOMRdAusQ/2024/5/9/20/11/dcp5W2EuFQBj/media/hls/byte-range-multivariant.m3u8';
+      // player.src = 'https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8';
+      // player.load();
+      timelineController!.addVideo(player);
+      // player.play()
+      //       .then(() => {})
+      //       .catch(error => {
+      //         console.error(error);
+      //       });
+    },
+    [playerRef, timelineController]);
 
   return (
     <Container>
@@ -226,6 +251,15 @@ function SessionPage(props: PageProperties) {
               </ToastContainer>
             </div>
           </Col>
+          <ReactHlsPlayer
+            style={{ width: 500, height: 300 }}
+            playerRef={playerRef}
+            src={'https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8'}
+            muted={true}
+            autoPlay={false}
+            controls={true}
+            hidden={false}
+          />
         </Row>
         <div className="vr" />
         <div>
@@ -236,7 +270,7 @@ function SessionPage(props: PageProperties) {
           style={{ width: 1200, height: 50 }}
         />
         <SciChartReact
-          style={{ width: 1200, height: 500 }}
+          style={{ width: 1200, height: 200 }}
           fallback={
             <div className="fallback">
               <div>Data fetching & Chart Initialization in progress</div>

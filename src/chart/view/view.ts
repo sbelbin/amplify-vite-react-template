@@ -67,7 +67,7 @@ const textLabelOffset = -2.0;
  */
 export class ChartView implements timeline_controller.ITimelineChartController,
                                   IChartViewTimelineNavigation {
-  readonly sourceId: timeline_controller.SourceId = 1;
+  sourceId?: timeline_controller.SourceId;
 
   public readonly chart: TWebAssemblyChart;
   private readonly timelineAxis: NumericAxis;
@@ -274,6 +274,8 @@ export class ChartView implements timeline_controller.ITimelineChartController,
   }
 
   public startTimelineNavigation(): void {
+    if (this.sourceId === undefined) return;
+
     this.onRestorePlayback = this.timelineController.startTimelineNavigation(this.sourceId);
   }
 
@@ -330,11 +332,13 @@ export class ChartView implements timeline_controller.ITimelineChartController,
 
     this.timelineAxis.visibleRange = new NumberRange(Math.min(x1, x2 - visibleRangeDistance), x2);
 
-    this.timelineController.onChangeCurrentTime({
-      sourceId: this.sourceId,
-      timePoint: this.currentTime,
-      timeOffset: this.currentTimeOffset
-    });
+    if (this.sourceId !== undefined) {
+      this.timelineController.onChangeCurrentTime({
+        sourceId: this.sourceId,
+        timePoint: this.currentTime,
+        timeOffset: this.currentTimeOffset
+      });
+    }
 
     this.restorePlayback(RestoreTimelineNavigationBehavior.Deferred);
   }
@@ -447,8 +451,10 @@ export class ChartView implements timeline_controller.ITimelineChartController,
   private isTimePointLoaded(timePoint: date_time.TimePoint): boolean {
     const timeRange = this.timelineAxis.getMaximumRange();
 
-    return (timePoint >= timeRange.min &&
-            timePoint <= timeRange.max);
+    // return (timePoint >= timeRange.min &&
+    //         timePoint <= timeRange.max);
+
+    return (timePoint <= timeRange.max);
   }
 
   /**
