@@ -1,6 +1,14 @@
+import {
+  InstituteId,
+  PatientId,
+  RecordingId,
+  SessionId,
+  TimeZone
+} from './types';
+
 export interface Data {
   folder: URL;
-};
+}
 
 export interface Video {
   channelARN?: string;
@@ -9,19 +17,17 @@ export interface Video {
   playbackURL?: URL;
   streamId?: string;
   streamSessionId?: string;
-};
+}
 
-interface Recording {
-  id: string;
-  instituteId: string;
-  patientId: string;
-  sessionId: string;
-  startTimestamp: Date;
-  finishTimestamp?: Date;
-  localTimeZone: string;
+export interface Recording {
+  id: RecordingId;
+  instituteId: InstituteId;
+  patientId: PatientId;
+  sessionId: SessionId;
+  startTime: Date;
+  finishTime?: Date;
+  localTimeZone: TimeZone;
   isLiveFeed: boolean;
   data?: Data;
   video?: Video;
-};
-
-export default Recording;
+}

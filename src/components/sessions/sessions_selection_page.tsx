@@ -1,8 +1,8 @@
-import fetchRecordings from '../../models/recordings/fetch_recordings';
-import Recording from '../../models/recordings/recording';
+import { fetchRecordings } from '../../models/recordings';
+import { Recording } from '../../models/recordings';
 
 import dateOrNow from '../../utilities/date_time/date_or_now';
-import formatDuration from '../../utilities/date_time/format_duration';
+import { formatDateRangeDuration } from '../../utilities/duration/format_duration';
 import { formatOptionalTimestamp, formatTimestamp } from '../../utilities/date_time/format_timestamp';
 import hasValue from '../../utilities/optional/has_value';
 
@@ -73,11 +73,11 @@ function SessionsSelectPage(props: PageProperties) {
         return;
       }
 
-      window.alert(`Selected recording is ${JSON.stringify(recording)}`);
+      navigate(`/sessions/${recording.id}`);
     },
-    []);
+    [navigate]);
 
-  const finishTimestampCellRenderer = (params: CustomCellRendererProps<Recording, Date>) => (
+  const finishTimeCellRenderer = (params: CustomCellRendererProps<Recording, Date>) => (
     hasValue(params.value)
     ? formatTimestamp(params.value!)
     : (
@@ -93,9 +93,11 @@ function SessionsSelectPage(props: PageProperties) {
   );
 
   const durationCellRenderer = (params: CustomCellRendererProps<Recording, number>) => (
-    hasValue(params.node.data?.startTimestamp) &&
-    formatDuration(params.node.data!.startTimestamp,
-                   dateOrNow(params.node.data!.finishTimestamp))
+    hasValue(params.node.data?.startTime) &&
+    formatDateRangeDuration({
+      min: params.node.data!.startTime,
+      max: dateOrNow(params.node.data!.finishTime)
+    })
   );
 
   const [rows, setRows] = useState<Recording[]>([]);
@@ -129,16 +131,16 @@ function SessionsSelectPage(props: PageProperties) {
     },
     {
       cellDataType: 'date',
-      field: 'startTimestamp',
+      field: 'startTime',
       filter: 'agDateColumnFilter',
-      headerName: 'Starting Time'
+      headerName: 'Start Time'
     },
     {
       cellDataType: 'date',
-      field: 'finishTimestamp',
+      field: 'finishTime',
       filter: 'agDateColumnFilter',
-      headerName: 'Finishing Time',
-      cellRenderer: finishTimestampCellRenderer,
+      headerName: 'Finish Time',
+      cellRenderer: finishTimeCellRenderer,
       comparator: (lhs: Date | null | undefined, rhs: Date | null | undefined) => {
         return (lhs === rhs)  ? 0
              : !hasValue(lhs) ? 1
@@ -196,10 +198,10 @@ function SessionsSelectPage(props: PageProperties) {
       return {
         sort: {
           sortModel: [
-            { colId: 'finishTimestamp', sort: 'desc' },
-            { colId: 'startTimestamp',  sort: 'desc' },
-            { colId: 'instituteId',     sort: 'asc' },
-            { colId: 'patientId',       sort: 'asc' }
+            { colId: 'finishTime',  sort: 'desc' },
+            { colId: 'startTime',   sort: 'desc' },
+            { colId: 'instituteId', sort: 'asc' },
+            { colId: 'patientId',   sort: 'asc' }
           ]
         }
       };
