@@ -5,6 +5,11 @@ import { loadAnnotationImage } from '../../chart/view';
 import { fetchRecordingById } from '../../models/recordings/fetch_recording_by_id';
 
 import { ChartController } from '../../chart/controller/controller';
+
+import {
+  VideoFeedController
+} from '../../video';
+
 import {
   LoadSequence,
   RecordingSessionFolder
@@ -36,8 +41,6 @@ import {
   chartBuilder,
   EThemeProviderType
 } from "scichart";
-
-import ReactHlsPlayer from 'react-hls-player';
 
 import { SciChartReact } from 'scichart-react';
 
@@ -115,29 +118,26 @@ function SessionPage(props: PageProperties) {
   },
   [navigate, props, recordingId]);
 
-  const [ timelineController, setTimeLineController ] = useState<TimelineController | undefined>(undefined);
-
+  let timelineController: TimelineController | undefined;
   let chartController: ChartController | undefined;
+  let videoFeedController: VideoFeedController | undefined;
 
-  const playerRef = useRef<HTMLVideoElement>(null);
+  const videoViewRef = useRef<HTMLVideoElement>(null);
 
   const [status, setStatus] = useState('');
 
   const initChart = async (rootElement: string | HTMLDivElement) => {
-
     const loadImagesPromise = loadAnnotationImage();
 
     const sessionCredentialsPromise = authentication.sessionCredentials();
 
     const recording = await fetchRecordingById(recordingId!);
 
-    const sessionCredentials = await sessionCredentialsPromise;
-
     const chartPromise = chartBuilder.build2DChart(rootElement,
                                                    {
-                                                    surface: {
+                                                     surface: {
                                                       theme: { type: EThemeProviderType.Navy },
-                                                    }
+                                                     }
                                                    });
 
     if (!recording) {
@@ -172,29 +172,33 @@ function SessionPage(props: PageProperties) {
                         ? Date.now()
                         : startTime;
 
-    const timelineController = new TimelineController(startTime, finishTime, referenceTime);
-
     const folderDetails: RecordingSessionFolder = {
       region: 'us-east-1',
       bucket: 'veegix8iosdev140644-dev',
       folder: 'recordings/sbelbin/2024-05-09T201117.125Z/data/'
     };
 
+    const playbackURL = 'https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8';
+
     const loadSequence = (referenceTime === startTime)
                        ? LoadSequence.Earliest
                        : LoadSequence.Latest;
 
-    const { wasmContext, sciChartSurface } = await chartPromise;
+    timelineController = new TimelineController(startTime, finishTime, referenceTime);
 
     await loadImagesPromise;
 
+    const { wasmContext, sciChartSurface } = await chartPromise;
+
     chartController = new ChartController({ wasmContext, sciChartSurface },
-                                          timelineController!,
-                                          sessionCredentials,
+                                          timelineController,
+                                          await sessionCredentialsPromise,
                                           folderDetails,
                                           loadSequence);
 
-    setTimeLineController(timelineController);
+    videoFeedController = new VideoFeedController(timelineController,
+                                                  videoViewRef.current!,
+                                                  playbackURL);
 
     return { sciChartSurface };
   };
@@ -202,28 +206,16 @@ function SessionPage(props: PageProperties) {
   const deleteChart = async () => {
     if (chartController) {
       await chartController.dispose();
+      chartController = undefined;
     }
 
-    chartController = undefined;
-    setTimeLineController(undefined);
+    if (videoFeedController) {
+      videoFeedController.dispose();
+      videoFeedController = undefined;
+    }
+
+    timelineController = undefined;
   };
-
-  useEffect(() => {
-      if (!playerRef.current || !timelineController) return;
-
-      const player = playerRef.current!;
-
-      // playerRef.current.src = 'https://ddowt3u7yt71y.cloudfront.net/ivs/v1/730335415888/vavtOMRdAusQ/2024/5/9/20/11/dcp5W2EuFQBj/media/hls/byte-range-multivariant.m3u8';
-      // player.src = 'https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8';
-      // player.load();
-      timelineController!.addVideo(player);
-      // player.play()
-      //       .then(() => {})
-      //       .catch(error => {
-      //         console.error(error);
-      //       });
-    },
-    [playerRef, timelineController]);
 
   return (
     <Container>
@@ -251,11 +243,9 @@ function SessionPage(props: PageProperties) {
               </ToastContainer>
             </div>
           </Col>
-          <ReactHlsPlayer
-            style={{ width: 500, height: 300 }}
-            playerRef={playerRef}
-            src={'https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8'}
-            muted={true}
+          <video
+            ref={videoViewRef}
+            style={{ width: 500, height: 100 }}
             autoPlay={false}
             controls={true}
             hidden={false}
@@ -270,7 +260,7 @@ function SessionPage(props: PageProperties) {
           style={{ width: 1200, height: 50 }}
         />
         <SciChartReact
-          style={{ width: 1200, height: 200 }}
+          style={{ width: 1200, height: 500 }}
           fallback={
             <div className="fallback">
               <div>Data fetching & Chart Initialization in progress</div>
