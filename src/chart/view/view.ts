@@ -196,7 +196,7 @@ export class ChartView implements timeline_controller.ITimelineChartController,
    */
   public loadAnnotations(annotations: eeg_readings.Annotations): void {
     annotations.forEach((annotation) => {
-      annotation.notes.forEach((note, index) => {
+      annotation.notes.forEach((_note, index) => {
         this.annotationDataSeries.append(annotation.timeRange.min, index);
 
         const markerAnnotation = new AxisMarkerAnnotation({
