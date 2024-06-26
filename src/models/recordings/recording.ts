@@ -6,14 +6,16 @@ import {
   TimeZone
 } from './types';
 
+import * as storage from '../../storage';
+
 export interface Data {
-  folder: URL;
+  folder?: storage.Path;
 }
 
 export interface Video {
   channelARN?: string;
   channelName?: string;
-  folder?: URL;
+  folder?: storage.Path;
   playbackURL?: URL;
   streamId?: string;
   streamSessionId?: string;

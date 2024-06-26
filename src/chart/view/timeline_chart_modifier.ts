@@ -11,7 +11,7 @@ import {
 export class TimelineChartModifier extends ChartModifierBase2D {
   readonly type = 'TimelineChartModifier';
 
-  private readonly restoreTimelineNavigationBehavior = RestoreTimelineNavigationBehavior.Deferred;
+  private readonly restoreTimelineNavigationBehavior = RestoreTimelineNavigationBehavior.Immediate;
   private readonly timelineNavigation: IChartViewTimelineNavigation;
 
   constructor(timelineNavigation: IChartViewTimelineNavigation) {

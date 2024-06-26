@@ -1,5 +1,6 @@
 import { assertAWSResponse } from '../utilities/error_handling/aws_assert_response';
 import { maximumChunkSize } from './constants';
+import { S3BucketPath } from './s3_bucket_path';
 
 import {
   Client,
@@ -15,8 +16,7 @@ import {
  * Fetches a single data segment.
  *
  * @param client: The storage client.
- * @param bucket: The storage bucket/container.
- * @param folder: The absolute path of the folder relative to the bucket.
+ * @param path: The file's storage path.
  * @param offsetRange: The offset range to fetch.
  * @returns An array of bytes.
  *
@@ -25,31 +25,26 @@ import {
  *          this function since they can simply enumerate the list that is returned.
  */
 export function fetchDataSegment(client: Client,
-                                 bucket: string,
-                                 key: string,
+                                 path: S3BucketPath,
                                  offsetRange: OffsetRange): Promise<Uint8Array> {
-  const command = new GetObjectCommand({ Bucket: bucket, Key: key });
+  const command = new GetObjectCommand({ Bucket: path.bucket, Key: path.path });
 
   return getDataSegment(client, command, offsetRange);
 }
 
 /**
- * Fetches a multiple data segments.
+ * Fetches data starting from the given offset until a given number of bytes were fetched
+ * or has reached a end-of-data condition.
  *
  * @param client: The storage client.
- * @param bucket: The storage bucket/container.
- * @param folder: The absolute path of the folder relative to the bucket.
+ * @param path: The file's storage path.
  * @param size: The number of bytes to fetch.
- * @param offsetRange: The offset range to start fetch from.
- * @returns Array buffer of bytes.
- *
- * @remarks The custom filter and custom sorting are practical means to reduce the amount of files
- *          to return from this function. This can reduce the complexity to the code that invokes
- *          this function since they can simply enumerate the list that is returned.
+ * @param startOffset: The starting offset to start fetch from.
+ * @param chunkSize: The amount of bytes to fetch per invocation.
+ * @returns Array buffer containing the data that was fetched.
  */
 export async function fetchData(client: Client,
-                                bucket: string,
-                                key: string,
+                                path: S3BucketPath,
                                 size: number,
                                 startOffset: number = 0,
                                 chunkSize: number = maximumChunkSize) : Promise<ArrayBuffer> {
@@ -59,7 +54,7 @@ export async function fetchData(client: Client,
   const finishOffset = startOffset + size - 1;
   let currentOffset = startOffset;
 
-  const command = new GetObjectCommand({ Bucket: bucket, Key: key });
+  const command = new GetObjectCommand({ Bucket: path.bucket, Key: path.path });
 
   while (currentOffset < finishOffset) {
     const bytesToRead = Math.min(finishOffset - currentOffset, chunkSize);
@@ -96,6 +91,6 @@ async function getDataSegment(client: Client,
 }
 
 async function sendCommand(client: Client,
-  command: GetObjectCommand): Promise<GetObjectCommandOutput> {
-return assertAWSResponse(await client.send(command));
+                           command: GetObjectCommand): Promise<GetObjectCommandOutput> {
+  return assertAWSResponse(await client.send(command));
 }

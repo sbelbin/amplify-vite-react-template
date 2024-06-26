@@ -9,6 +9,8 @@ import {
   ListFilesOrderBy
 } from './types';
 
+import { S3BucketPath } from './s3_bucket_path';
+
 import {
   ListObjectsV2Command,
   ListObjectsV2CommandOutput,
@@ -18,8 +20,7 @@ import {
  * Provides a list of files that exist in the specified folder and its subfolders.
  *
  * @param client: The storage client.
- * @param bucket: The storage bucket/container.
- * @param folder: The absolute path of the folder relative to the bucket.
+ * @param folder: The folder's storage path.
  * @param customFilter: A custom function to filter the files.
  * @param customOrderBy: A custom function to sort this list of files.
  * @returns An array of files.
@@ -29,8 +30,7 @@ import {
  *          this function since they can simply enumerate the list that is returned.
  */
 export async function listFilesInFolder(client: Client,
-                                        bucket: string,
-                                        folder: string,
+                                        folder: S3BucketPath,
                                         customFilter: ListFilesFilter = unfilteredListFiles,
                                         customOrderBy?: ListFilesOrderBy): Promise<File[]>
 {
@@ -43,8 +43,8 @@ export async function listFilesInFolder(client: Client,
     contents?.filter((object) => listFilesFilter(object)) ?? [];
 
   const command = new ListObjectsV2Command({
-                        Bucket: bucket,
-                        Prefix: folder
+                        Bucket: folder.bucket,
+                        Prefix: folder.path
                       });
 
   let response = await sendCommand(client, command);
@@ -64,15 +64,18 @@ export async function listFilesInFolder(client: Client,
 /**
  * Provides a list of files that were created or modified after the given reference point-in-time.
  *
- * @param date: Minutes as a number value.
+ * @param client: AWS S3 storage client.
+ * @param path: The storage file path.
+ * @param referenceTime: A reference point-in-time of the file's modified timestamp to filter.
+ * @param customFiler: An additional custom filter function to apply to each file.
+ * @param orderBy: A custom sorting function to apply on the complete list of files.
  * @returns An array of files.
  *
  * @remarks This is useful in situations such as the monitoring a given folder & its sub-folders
  *          as to act when files are added into the folder.
  */
 export async function listFilesModifiedAfter(client: Client,
-                                             bucket: string,
-                                             folder: string,
+                                             path: S3BucketPath,
                                              referenceTime: Date,
                                              customFilter: ListFilesFilter = unfilteredListFiles,
                                              orderBy?: ListFilesOrderBy): Promise<File[]>
@@ -82,7 +85,7 @@ export async function listFilesModifiedAfter(client: Client,
     return (fileLastModified > referenceTime.getTime()) && customFilter(file);
   }
 
-  return listFilesInFolder(client, bucket, folder, fileListFilter, orderBy);
+  return listFilesInFolder(client, path, fileListFilter, orderBy);
 }
 
 //

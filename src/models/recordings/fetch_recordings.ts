@@ -1,7 +1,5 @@
 import { Recording } from './recording';
-
-import hasValue from '../../utilities/optional/has_value';
-import { parseDate, parseOptionalDate } from '../../utilities/date_time/parse_date';
+import { toRecording } from './transform';
 
 import type { Schema } from '../../../amplify/data/resource';
 
@@ -24,14 +22,5 @@ export async function fetchRecordings() : Promise<Recording[]> {
     throw new Error(errors.map((error) => error.message).join(', '));
   }
 
-  return recordings.map((recording) => ({
-    id: recording.id,
-    instituteId: recording.instituteId,
-    sessionId: recording.sessionId,
-    patientId: recording.patientId,
-    startTime: parseDate(recording.startTimestamp),
-    finishTime: parseOptionalDate(recording.finishTimestamp),
-    localTimeZone: recording.localTimeZone,
-    isLiveFeed: !hasValue(recording.finishTimestamp)
-  }));
+  return recordings.map((recording) => toRecording(recording));
 }

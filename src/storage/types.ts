@@ -9,7 +9,6 @@ export type File = _Object;
 export type ListFilesFilter = (file: File) => boolean;
 export type ListFilesOrderBy = (lhs: File, rhs: File) => number;
 
-
 export interface OffsetRange {
   start: number
   finish: number

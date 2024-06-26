@@ -26,6 +26,8 @@ import {
   CustomCellRendererProps
 } from 'ag-grid-react';
 
+import { Container } from '@mui/material';
+
 import {
   useCallback,
   useEffect,
@@ -39,7 +41,6 @@ import { useNavigate } from 'react-router-dom';
 import {
   Button,
   Col,
-  Container,
   Row,
   Stack,
   Toast,
@@ -242,7 +243,7 @@ function SessionsSelectPage(props: PageProperties) {
     [setSelectedRow]);
 
   return (
-    <Container>
+    <Container fixed maxWidth='xl'>
       <Stack>
         <div className="vr" />
         <div className="vr" />
@@ -287,8 +288,8 @@ function SessionsSelectPage(props: PageProperties) {
         <div
           className="ag-theme-quartz-dark"
           style={{
-            height: 500,
-            width: 1040,
+            height: 750,
+            width: 1005,
           }}
         >
           <AgGridReact<Recording>
