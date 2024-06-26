@@ -5,10 +5,7 @@ import { loadAnnotationImage } from '../../chart/view';
 import { fetchRecordingById } from '../../models/recordings/fetch_recording_by_id';
 
 import { ChartController } from '../../chart/controller/controller';
-
-import {
-  VideoFeedController
-} from '../../video';
+import { VideoFeedController } from '../../video';
 
 import {
   LoadSequence,
@@ -16,6 +13,8 @@ import {
 } from '../../chart/data_source';
 
 import { TimelineController } from '../../timeline_controller';
+
+import { Container } from '@mui/material';
 
 import {
   useEffect,
@@ -29,10 +28,6 @@ import {
 } from 'react-router-dom';
 
 import {
-  Col,
-  Container,
-  Row,
-  Stack,
   Toast,
   ToastContainer
 } from 'react-bootstrap';
@@ -98,7 +93,8 @@ interface PageProperties {
  *
  *   This is akin to jumping to the finish of the recording session.
  */
-function SessionPage(props: PageProperties) {
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+function SessionPage(_props: PageProperties) {
   const [errorTitle, setErrorTitle] = useState('');
   const [errorMessage, setErrorMessage] = useState('');
   const [showError, setShowError] = useState(false);
@@ -109,22 +105,17 @@ function SessionPage(props: PageProperties) {
   const { recordingId } = useParams();
 
   useEffect(() => {
-    console.debug(`The user is logged-in ${props.isUserLoggedIn()}`);
-
-    // (!props.isUserLoggedIn() || recordingId === undefined)
     (recordingId === undefined)
     &&
     navigate('/');
   },
-  [navigate, props, recordingId]);
+  [navigate, recordingId]);
 
   let timelineController: TimelineController | undefined;
   let chartController: ChartController | undefined;
   let videoFeedController: VideoFeedController | undefined;
 
   const videoViewRef = useRef<HTMLVideoElement>(null);
-
-  const [status, setStatus] = useState('');
 
   const initChart = async (rootElement: string | HTMLDivElement) => {
     const loadImagesPromise = loadAnnotationImage();
@@ -144,7 +135,6 @@ function SessionPage(props: PageProperties) {
       setErrorTitle('Recording session unavailable.');
       setErrorMessage('The recording session is unavailable');
       setShowError(true);
-      setStatus('The recording session is unavailable');
 
       const { sciChartSurface } = await chartPromise;
       return { sciChartSurface };
@@ -154,12 +144,10 @@ function SessionPage(props: PageProperties) {
     //   setErrorTitle('Recording session unavailable.');
     //   setErrorMessage('Recording session EEG readings are unavailable.');
     //   setShowError(true);
-    //   setStatus('Recording session EEG readings are unavailable.');
 
     //   setErrorTitle('Authentication gotten.');
     //   setErrorMessage('Construction of the chart and timeline controller can proceed.');
     //   setShowError(true);
-    //   setStatus('Construction of the chart and timeline controller can proceed.');
 
     //   const { sciChartSurface } = await chartPromise;
     //   return { sciChartSurface };
@@ -218,13 +206,7 @@ function SessionPage(props: PageProperties) {
   };
 
   return (
-    <Container>
-      <Stack>
-        <div className="vr" />
-        <div className="vr" />
-        <Row>
-          <Col md={{ span: 0, offset: 9 }}>
-            <div>
+    <Container fixed={true} maxWidth={'xl'}>
               <ToastContainer>
                 <Toast
                   bg="danger"
@@ -241,8 +223,6 @@ function SessionPage(props: PageProperties) {
                   </Toast.Body>
                 </Toast>
               </ToastContainer>
-            </div>
-          </Col>
           <video
             ref={videoViewRef}
             style={{ width: 500, height: 100 }}
@@ -250,17 +230,12 @@ function SessionPage(props: PageProperties) {
             controls={true}
             hidden={false}
           />
-        </Row>
-        <div className="vr" />
-        <div>
-          {status}
-        </div>
         <div
           id="overview"
-          style={{ width: 1200, height: 50 }}
+          style={{ width: 1400, height: 50 }}
         />
         <SciChartReact
-          style={{ width: 1200, height: 500 }}
+          style={{ width: 1400, height: 600 }}
           fallback={
             <div className="fallback">
               <div>Data fetching & Chart Initialization in progress</div>
@@ -270,7 +245,6 @@ function SessionPage(props: PageProperties) {
           onDelete={deleteChart}
         >
         </SciChartReact>
-      </Stack>
     </Container>
   );
 }

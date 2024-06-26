@@ -11,11 +11,12 @@ import UserSignUpPage from './components/users/sign_up_page';
 import SessionPage from './components/sessions/session_page';
 import SessionsSelectPage from './components/sessions/sessions_selection_page';
 import SiteNavigationBar from './components/site/navigation_bar';
-import SiteFooter from './components/site/footer';
+
+import { Container } from '@mui/material';
 
 import { useEffect, useState } from 'react';
 
-import { Container, Row } from 'react-bootstrap';
+import { Row } from 'react-bootstrap';
 
 import { Route, Routes, useNavigate } from 'react-router-dom';
 
@@ -73,7 +74,7 @@ function App() {
   }
 
   return (
-    <Container fluid>
+    <Container fixed={true} maxWidth={'xl'}>
       <Row>
       <SiteNavigationBar
         userName={userName}
@@ -116,9 +117,6 @@ function App() {
             element={<SessionPage isUserLoggedIn={isUserLoggedIn} />}
           />
         </Routes>
-      </Row>
-      <Row>
-        <SiteFooter />
       </Row>
     </Container>
   );

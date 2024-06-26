@@ -388,7 +388,6 @@ export class TimelineController implements ITimelineController
   private pauseVideo(): void {
     if (this.isVideoPlaying()) {
       this.video?.pause();
-      console.debug('Pausing the video playback.');
     }
   }
 
@@ -403,7 +402,6 @@ export class TimelineController implements ITimelineController
   {
     if (!this.isVideoPlaying()) {
       this.video?.play();
-      console.debug('Resuming the video playback.');
     }
   }
 }
