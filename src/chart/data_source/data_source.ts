@@ -2,8 +2,7 @@ import {
   LoadSequence,
   OnDefinitionsReady,
   OnDisposed,
-  OnSegmentReady,
-  RecordingSessionFolder
+  OnSegmentReady
 } from './types';
 
 import { readPayload } from '../../eeg_readings/parsers/edf';
@@ -59,7 +58,7 @@ import * as storage from '../../storage';
  */
 export class ChartDataSource {
   private readonly storageClient: storage.Client;
-  private readonly folderDetails: RecordingSessionFolder;
+  private readonly folder: storage.Path;
   private readonly onDefinitionsReady: OnDefinitionsReady;
   private readonly onSegmentReady: OnSegmentReady;
   private readonly onDisposed: OnDisposed;
@@ -68,15 +67,16 @@ export class ChartDataSource {
   private monitorFolderInterval?: number;
   private monitorFolderTimer?: NodeJS.Timeout;
   private lastModifiedTime: number = 0;
+  private isEnumerating: boolean = false;
 
   constructor(storageClient: storage.Client,
-              folderDetails: RecordingSessionFolder,
+              folder: storage.Path,
               onDefinitionsReady: OnDefinitionsReady,
               onSegmentReady: OnSegmentReady,
               onDisposed: OnDisposed,
               loadSequence: LoadSequence = LoadSequence.Earliest) {
     this.storageClient = storageClient;
-    this.folderDetails = folderDetails;
+    this.folder = folder;
     this.onDefinitionsReady = onDefinitionsReady;
     this.onSegmentReady = onSegmentReady;
     this.onDisposed = onDisposed;
@@ -112,17 +112,20 @@ export class ChartDataSource {
   }
 
   private async monitorFolderForChanges(): Promise<void> {
-    if (this.isCancelled()) {
+    if (this.isCancelled() || this.isEnumerating) {
       return;
     }
 
-    const listFilesFilter = (file: storage.File) =>
-                              !this.filesLoaded.has(file?.Key ?? '');
+    this.isEnumerating = true;
 
     try {
+      const listFilesFilter = (file: storage.File) =>
+                                !this.filesLoaded.has(file?.Key ?? '');
+
+      const folder = storage.toS3BucketPath(this.folder as storage.AWS_S3_Path)!;
+
       const listFiles = await storage.listFilesModifiedAfter(this.storageClient,
-                                                             this.folderDetails.bucket,
-                                                             this.folderDetails.folder,
+                                                             folder,
                                                              new Date(this.lastModifiedTime),
                                                              listFilesFilter,
                                                              this.listFilesOrderBy);
@@ -132,25 +135,27 @@ export class ChartDataSource {
           return;
         }
 
-        storage.fetchData(this.storageClient, this.folderDetails.bucket, file.Key!, file.Size!)
-        .then((dataBuffer) => {
-          const payload = readPayload(dataBuffer);
+        const filePath = { bucket: folder.bucket, path: file.Key! };
 
-          if (this.filesLoaded.size === 0) {
-            this.onDefinitionsReady(payload.definitions);
-          }
+        const dataBuffer = await storage.fetchData(this.storageClient, filePath, file.Size!);
+        const payload = readPayload(dataBuffer);
 
-          this.onSegmentReady(payload.segment);
+        if (this.filesLoaded.size === 0) {
+          this.onDefinitionsReady(payload.definitions);
+        }
 
-          this.filesLoaded.add(file.Key!);
-          this.lastModifiedTime = Math.max(this.lastModifiedTime, file.LastModified?.getTime() ?? 0);
-        });
+        this.onSegmentReady(payload.segment);
+
+        this.filesLoaded.add(file.Key!);
+        this.lastModifiedTime = Math.max(this.lastModifiedTime,
+                                         file.LastModified?.getTime() ?? 0);
       }
     }
     catch(error) {
       console.error(`Failed to monitor for changes on the folder. Reason: ${error}`);
     }
     finally {
+      this.isEnumerating = false;
       this.launchMonitorFolderTimer();
     }
   }

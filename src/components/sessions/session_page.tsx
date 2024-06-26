@@ -1,36 +1,33 @@
 import * as authentication from '../../authentication';
 
+import { ChartController } from '../../chart/controller/controller';
+
 import { loadAnnotationImage } from '../../chart/view';
 
 import { fetchRecordingById } from '../../models/recordings/fetch_recording_by_id';
 
-import { ChartController } from '../../chart/controller/controller';
-import { VideoFeedController } from '../../video';
-
-import {
-  LoadSequence,
-  RecordingSessionFolder
-} from '../../chart/data_source';
+import hasValue from '../../utilities/optional/has_value';
 
 import { TimelineController } from '../../timeline_controller';
+
+import { VideoController } from '../../video';
 
 import { Container } from '@mui/material';
 
 import {
-  useEffect,
   useRef,
   useState
 } from 'react';
 
 import {
-  useNavigate,
-  useParams
-} from 'react-router-dom';
-
-import {
   Toast,
   ToastContainer
 } from 'react-bootstrap';
+
+import {
+  useNavigate,
+  useParams
+} from 'react-router-dom';
 
 import {
   chartBuilder,
@@ -95,43 +92,36 @@ interface PageProperties {
  */
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 function SessionPage(_props: PageProperties) {
+  const navigate = useNavigate();
+  const { recordingId } = useParams();
+  (recordingId === undefined) &&navigate('/');
+
+  const videoViewRef = useRef<HTMLVideoElement>(null);
+
   const [errorTitle, setErrorTitle] = useState('');
   const [errorMessage, setErrorMessage] = useState('');
   const [showError, setShowError] = useState(false);
   const toggleShowError = () => setShowError(!showError);
 
-  const navigate = useNavigate();
-
-  const { recordingId } = useParams();
-
-  useEffect(() => {
-    (recordingId === undefined)
-    &&
-    navigate('/');
-  },
-  [navigate, recordingId]);
-
   let timelineController: TimelineController | undefined;
   let chartController: ChartController | undefined;
-  let videoFeedController: VideoFeedController | undefined;
-
-  const videoViewRef = useRef<HTMLVideoElement>(null);
+  let videoFeedController: VideoController | undefined;
 
   const initChart = async (rootElement: string | HTMLDivElement) => {
     const loadImagesPromise = loadAnnotationImage();
 
     const sessionCredentialsPromise = authentication.sessionCredentials();
 
-    const recording = await fetchRecordingById(recordingId!);
-
     const chartPromise = chartBuilder.build2DChart(rootElement,
                                                    {
                                                      surface: {
-                                                      theme: { type: EThemeProviderType.Navy },
+                                                       theme: { type: EThemeProviderType.Navy },
                                                      }
                                                    });
 
-    if (!recording) {
+    const recording = await fetchRecordingById(recordingId!);
+
+    if (!recording?.data?.folder) {
       setErrorTitle('Recording session unavailable.');
       setErrorMessage('The recording session is unavailable');
       setShowError(true);
@@ -140,58 +130,43 @@ function SessionPage(_props: PageProperties) {
       return { sciChartSurface };
     }
 
-    // if (!recording.data) {
-    //   setErrorTitle('Recording session unavailable.');
-    //   setErrorMessage('Recording session EEG readings are unavailable.');
-    //   setShowError(true);
-
-    //   setErrorTitle('Authentication gotten.');
-    //   setErrorMessage('Construction of the chart and timeline controller can proceed.');
-    //   setShowError(true);
-
-    //   const { sciChartSurface } = await chartPromise;
-    //   return { sciChartSurface };
-    // }
-
-    const startTime = recording.startTime.getTime();
-    const finishTime = recording.finishTime?.getTime();
-
     const referenceTime = recording.isLiveFeed
                         ? Date.now()
-                        : startTime;
+                        : recording.startTime.getTime();
 
-    const folderDetails: RecordingSessionFolder = {
-      region: 'us-east-1',
-      bucket: 'veegix8iosdev140644-dev',
-      folder: 'recordings/sbelbin/2024-05-09T201117.125Z/data/'
-    };
-
-    const playbackURL = 'https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8';
-
-    const loadSequence = (referenceTime === startTime)
-                       ? LoadSequence.Earliest
-                       : LoadSequence.Latest;
-
-    timelineController = new TimelineController(startTime, finishTime, referenceTime);
+    timelineController = new TimelineController(recording.startTime.getTime(),
+                                                recording.finishTime?.getTime(),
+                                                referenceTime);
 
     await loadImagesPromise;
-
     const { wasmContext, sciChartSurface } = await chartPromise;
 
     chartController = new ChartController({ wasmContext, sciChartSurface },
                                           timelineController,
                                           await sessionCredentialsPromise,
-                                          folderDetails,
-                                          loadSequence);
+                                          recording.data.folder);
 
-    videoFeedController = new VideoFeedController(timelineController,
-                                                  videoViewRef.current!,
-                                                  playbackURL);
+    const videoView = videoViewRef.current!;
+    const isVideoPlayback = hasValue(recording.video?.playbackURL);
+
+    if (isVideoPlayback) {
+      videoFeedController = new VideoController(timelineController,
+                                                videoView,
+                                                recording.video!.playbackURL!);
+    }
+
+    videoView.hidden = !isVideoPlayback;
+    videoView.controls = isVideoPlayback;
 
     return { sciChartSurface };
   };
 
   const deleteChart = async () => {
+    if (videoViewRef.current) {
+      videoViewRef.current.hidden = true;
+      videoViewRef.current.controls = false;
+    }
+
     if (chartController) {
       await chartController.dispose();
       chartController = undefined;
@@ -202,49 +177,46 @@ function SessionPage(_props: PageProperties) {
       videoFeedController = undefined;
     }
 
-    timelineController = undefined;
+    if (timelineController) {
+      timelineController = undefined;
+    }
   };
 
   return (
     <Container fixed={true} maxWidth={'xl'}>
-              <ToastContainer>
-                <Toast
-                  bg="danger"
-                  show={showError}
-                  onClose={toggleShowError}
-                >
-                  <Toast.Header>
-                    <strong>
-                      {errorTitle}
-                    </strong>
-                  </Toast.Header>
-                  <Toast.Body>
-                    {errorMessage}
-                  </Toast.Body>
-                </Toast>
-              </ToastContainer>
-          <video
-            ref={videoViewRef}
-            style={{ width: 500, height: 100 }}
-            autoPlay={false}
-            controls={true}
-            hidden={false}
-          />
-        <div
-          id="overview"
-          style={{ width: 1400, height: 50 }}
-        />
-        <SciChartReact
-          style={{ width: 1400, height: 600 }}
-          fallback={
-            <div className="fallback">
-              <div>Data fetching & Chart Initialization in progress</div>
-            </div>
-          }
-          initChart={initChart}
-          onDelete={deleteChart}
+      <ToastContainer>
+        <Toast
+          bg="danger"
+          show={showError}
+          onClose={toggleShowError}
         >
-        </SciChartReact>
+          <Toast.Header>
+            <strong>
+              {errorTitle}
+            </strong>
+          </Toast.Header>
+          <Toast.Body>
+            {errorMessage}
+          </Toast.Body>
+        </Toast>
+      </ToastContainer>
+      <video
+        ref={videoViewRef}
+        style={{ width: 500, height: 100 }}
+        autoPlay={false}
+        controls={false}
+        hidden={true}
+      />
+      <div
+        id="overview"
+        style={{ width: 1400, height: 50 }}
+      />
+      <SciChartReact
+        style={{ width: 1400, height: 600 }}
+        initChart={initChart}
+        onDelete={deleteChart}
+      >
+      </SciChartReact>
     </Container>
   );
 }

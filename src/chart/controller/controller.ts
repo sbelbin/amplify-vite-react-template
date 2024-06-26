@@ -4,7 +4,6 @@ import {
   KindRequestMessage,
   KindResponseMessage,
   LoadSequence,
-  RecordingSessionFolder,
   ResponseMessage,
 } from '../data_source';
 
@@ -12,6 +11,8 @@ import {
   Segment,
   SignalDefinitions
 } from '../../models/eeg_readings';
+
+import * as storage from '../../storage';
 
 import { ITimelineController } from '../../timeline_controller';
 
@@ -53,14 +54,14 @@ export class ChartController {
   private readonly disposePromise: Promise<void>;
   private disposeResolver?: () => void;
 
-
   constructor(chart: TWebAssemblyChart,
               timelineController: ITimelineController,
               sessionCredentials: AwsCredentialIdentity | undefined,
-              folderDetails: RecordingSessionFolder,
-              loadSequence: LoadSequence) {
+              folder: storage.Path) {
     this.view = new ChartView(chart, timelineController);
-    this.dataSource = new Worker(new URL('../../workers/chart_data_source.ts', import.meta.url), {type: 'module'});
+    this.dataSource = new Worker(new URL('../../workers/chart_data_source.ts',
+                                 import.meta.url),
+                                 { type: 'module' });
 
     this.disposePromise = new Promise<void>((resolve) =>
                                 this.disposeResolver = resolve);
@@ -91,10 +92,14 @@ export class ChartController {
       }
     };
 
+    const loadSequence = (timelineController.currentTime === timelineController.timeRange.min)
+                       ? LoadSequence.Earliest
+                       : LoadSequence.Latest;
+
     this.dataSource.postMessage({
       kind: KindRequestMessage.Initialize,
       sessionCredentials: sessionCredentials,
-      folderDetails: folderDetails,
+      folder: JSON.stringify(folder),
       loadSequence: loadSequence
     });
 

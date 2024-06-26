@@ -1,20 +1,23 @@
-import { VideoFeed } from './video_feed';
+import { IFeed } from './ifeed';
 
 import Hls, { HlsConfig } from 'hls.js';
 
-export class HLSVideoFeed implements VideoFeed {
-  readonly videoView: HTMLVideoElement;
-  private readonly source: string;
+/**
+ * Implementation of an HLS video-feed.
+ */
+export class HLSFeed implements IFeed {
+  private readonly videoView: HTMLVideoElement;
+  private readonly playbackURL: URL;
   private readonly config?: HlsConfig;
   private hls?: Hls;
 
   constructor(videoView: HTMLVideoElement,
-              source: string,
+              playbackURL: URL,
               config?: HlsConfig) {
     if (!Hls.isSupported()) throw new Error("HLS isn't supported.");
 
     this.videoView = videoView;
-    this.source = source;
+    this.playbackURL = playbackURL;
     this.config = config ?? Hls.DefaultConfig;
     this.config.enableWorker = true;
     this.config.maxBufferSize = 60;
@@ -33,11 +36,13 @@ export class HLSVideoFeed implements VideoFeed {
 
   private initializeHLS(): void {
     const videoView = this.videoView;
-    const source = this.source;
+    const source = this.playbackURL.toString();
     const config = this.config;
     const resumePlay = false;
 
     this.dispose();
+
+    const reinitializeMedia = () => this.initializeHLS();
 
     const hls = new Hls(config);
 
@@ -54,8 +59,6 @@ export class HLSVideoFeed implements VideoFeed {
           }
       });
     });
-
-    const reinitializeMedia = () => this.initializeHLS();
 
     hls.on(Hls.Events.ERROR, function (_event, data) {
       if (data.fatal) {

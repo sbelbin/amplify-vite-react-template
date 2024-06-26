@@ -68,11 +68,14 @@ export class TimelineController implements ITimelineController
     this.finishTime = finishTime;
 
     const timeRange = this.timeRange;
+
     const currentTime = (referenceTime < timeRange.min) ? timeRange.min
                       : (referenceTime > timeRange.max) ? timeRange.max
                       : referenceTime;
 
     this._currentTimeOffset = currentTime - this.startTime;
+
+    console.debug(`time span is from: ${new Date(timeRange.min)} to: ${new Date(timeRange.max)} & current: ${new Date(this.currentTime)}.`);
   }
 
   /**
@@ -168,7 +171,7 @@ export class TimelineController implements ITimelineController
   }
 
   public onChangeCurrentTime(event: ChangeCurrentTimeEvent) {
-    if (!this.isVideoPlaying()) {
+    if (this.currentSourceId == event.sourceId && !this.isVideoPlaying()) {
       this._currentTimeOffset = event.timeOffset;
       this.setVideoCurrentTime();
     }

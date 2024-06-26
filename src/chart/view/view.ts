@@ -197,8 +197,6 @@ export class ChartView implements timeline_controller.ITimelineChartController,
   public loadAnnotations(annotations: eeg_readings.Annotations): void {
     annotations.forEach((annotation) => {
       annotation.notes.forEach((note, index) => {
-        console.debug(`Adding an annotation note of ${note}.`);
-
         this.annotationDataSeries.append(annotation.timeRange.min, index);
 
         const markerAnnotation = new AxisMarkerAnnotation({
@@ -449,12 +447,10 @@ export class ChartView implements timeline_controller.ITimelineChartController,
    *   introduce gaps once we add a mechanism to unload a leading or trailing segments.
    */
   private isTimePointLoaded(timePoint: date_time.TimePoint): boolean {
-    const timeRange = this.timelineAxis.getMaximumRange();
+    const timeRange = this.timelineAxis.visibleRangeLimit;
 
-    // return (timePoint >= timeRange.min &&
-    //         timePoint <= timeRange.max);
-
-    return (timePoint <= timeRange.max);
+    return (timePoint >= timeRange.min &&
+           timePoint <= timeRange.max);
   }
 
   /**

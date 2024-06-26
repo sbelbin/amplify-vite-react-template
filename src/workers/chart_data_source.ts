@@ -30,8 +30,10 @@ self.onmessage = (event: MessageEvent<RequestMessage>) => {
         const onDisposed = () =>
           self.postMessage({ kind: KindResponseMessage.Disposed });
 
-        chartDataSource = new ChartDataSource(storage.connectWithCredentials(msg.folderDetails.region, msg.sessionCredentials),
-                                              msg.folderDetails,
+        const folder = storage.parsePath(msg.folder) as storage.AWS_S3_Path;
+
+        chartDataSource = new ChartDataSource(storage.connectWithCredentials(folder.region, msg.sessionCredentials),
+                                              folder,
                                               onDefinitionsReady,
                                               onSegmentReady,
                                               onDisposed,

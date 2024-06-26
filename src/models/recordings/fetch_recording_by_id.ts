@@ -1,23 +1,21 @@
 import { Recording } from './recording';
+import { toRecording } from './transform';
 import { RecordingId } from './types';
-
-import hasValue from '../../utilities/optional/has_value';
-import { parseDate, parseOptionalDate } from '../../utilities/date_time/parse_date';
 
 import type { Schema } from '../../../amplify/data/resource';
 
 import { generateClient } from 'aws-amplify/api';
 
 /**
- * Fetches a recording session from the underlying cloud storage.
+ * Fetches a recording session by it's identifier.
  *
- * @param recordingId - Recording session identifier.
- * @returns Recording or null when not found.
+ * @param recordingId: Recording session identifier.
+ * @returns Recording or undefined when not found.
  *
  * @remarks Fetches only the recording sessions to which the current authenticated context, such
  *          as a logged-in user, has read-access permissions to.
  */
-export async function fetchRecordingById(recordingId: RecordingId) : Promise<Recording | null> {
+export async function fetchRecordingById(recordingId: RecordingId) : Promise<Recording | undefined> {
   const client = generateClient<Schema>();
 
   const { data: recording, errors } = await client.models.recordings.get({ id: recordingId });
@@ -26,16 +24,5 @@ export async function fetchRecordingById(recordingId: RecordingId) : Promise<Rec
     throw new Error(errors.map((error) => error.message).join(', '));
   }
 
-  return (recording === null)
-       ? null
-       : {
-           id: recording.id,
-           instituteId: recording.instituteId,
-           sessionId: recording.sessionId,
-           patientId: recording.patientId,
-           startTime: parseDate(recording.startTimestamp),
-           finishTime: parseOptionalDate(recording.finishTimestamp),
-           localTimeZone: recording.localTimeZone,
-           isLiveFeed: !hasValue(recording.finishTimestamp)
-         };
+  return recording ? toRecording(recording) : undefined;
 }

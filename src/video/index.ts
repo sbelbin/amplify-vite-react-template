@@ -1,2 +1,2 @@
 export * from './controller';
-export * from './video_feed';
+export * from './feed';
