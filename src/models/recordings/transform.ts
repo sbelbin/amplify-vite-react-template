@@ -13,7 +13,7 @@ export namespace database {
   export type Video = Recording["video"];
 
   export type StoragePath = {
-    kind: 'AWS_S3' | 'AZURE_BLOB',
+    kind?: 'AWS_S3' | 'AZURE_BLOB' | null,
     region?: string | null,
     url: string
   };
@@ -51,7 +51,7 @@ export function toRecording(recording: database.Recording): Recording  {
 export function toData(data: database.Data): Data | undefined {
   return (data)
        ? {
-           folder: toStoragePath(data.folder)
+           folder: toStoragePath(data.folder!)
          }
        : undefined;
 }
@@ -83,7 +83,7 @@ function toOptionalString(value?: string | null): string | undefined {
 }
 
 function toStoragePath(path: database.StoragePath): storage.Path {
-  const kind = path.kind.valueOf() as storage.KindPath;
+  const kind = path.kind!.valueOf() as storage.KindPath;
   const url = new URL(path.url);
 
   switch (kind) {
