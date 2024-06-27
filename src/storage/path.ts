@@ -5,9 +5,9 @@
  *   Currently only supports AWS's S3 buckets, but in time could support other cloud storage providers
  *   such as Microsoft's Azure Blob storage and OVH's S3 buckets.
  */
-export const enum KindPaths {
-  AWS_S3 = 'aws_s3',
-  Azure_Blob = 'azure_blob'
+export const enum KindPath {
+  AWS_S3 = 'AWS_S3',
+  AZURE_BLOB = 'AZURE_BLOB'
 }
 
 /**
@@ -23,7 +23,7 @@ export const enum KindPaths {
  *   to accomplish the operation(s) such as fetching the data.
  */
 export interface IPath {
-  kind: KindPaths;
+  kind: KindPath;
   url: URL;
 }
 
@@ -37,12 +37,12 @@ export interface IPath {
  *   from the default AWS region.
  */
 export interface AWSS3Path extends IPath {
-  kind: KindPaths.AWS_S3
+  kind: KindPath.AWS_S3
   region: string;
 }
 
 export interface AzureBlobFolder extends IPath {
-  kind: KindPaths.Azure_Blob;
+  kind: KindPath.AZURE_BLOB;
 }
 
 /**
@@ -58,18 +58,18 @@ export type Path = AWSS3Path | AzureBlobFolder;
 export function parsePath(text: string): Path | undefined {
   const path = JSON.parse(text);
 
-  const kind = path.kind as KindPaths;
+  const kind = path.kind as KindPath;
   const url = new URL(path.url);
 
   switch (kind) {
-    case KindPaths.AWS_S3:
+    case KindPath.AWS_S3:
       return {
                kind: kind,
                region: path.region,
                url: url
              };
 
-    case KindPaths.Azure_Blob:
+    case KindPath.AZURE_BLOB:
       return {
                kind: kind,
                url: url

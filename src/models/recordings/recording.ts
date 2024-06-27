@@ -9,7 +9,7 @@ import {
 import * as storage from '../../storage';
 
 export interface Data {
-  folder?: storage.Path;
+  folder: storage.Path;
 }
 
 export interface Video {
