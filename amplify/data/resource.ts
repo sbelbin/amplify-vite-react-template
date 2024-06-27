@@ -11,9 +11,6 @@ const schema = a.schema({
     url: a.url().required(),
     region: a.string()
   }),
-  recordingData: a.customType({
-    folder: a.ref('storagePath').required(),
-  }),
   recordings: a
     .model({
       instituteId: a.string().required(),
@@ -22,7 +19,9 @@ const schema = a.schema({
       startTimestamp: a.datetime().required(),
       finishTimestamp: a.datetime(),
       localTimeZone: a.string().required(),
-      data: a.ref('recordingData').required(),
+      data: a.customType({
+        folder: a.ref('storagePath').required(),
+      }),
       video: a.customType({
         channelARN: a.string(),
         channelName: a.string(),
