@@ -12,11 +12,7 @@ export namespace database {
   export type Data = Recording["data"];
   export type Video = Recording["video"];
 
-  export type StoragePath = {
-    kind?: 'AWS_S3' | 'AZURE_BLOB' | null,
-    region?: string | null,
-    url: string
-  };
+  export type StoragePath = string;
 }
 
 /**
@@ -83,23 +79,11 @@ function toOptionalString(value?: string | null): string | undefined {
 }
 
 function toStoragePath(path: database.StoragePath): storage.Path {
-  const kind = path.kind!.valueOf() as storage.KindPath;
-  const url = new URL(path.url);
-
-  switch (kind) {
-    case storage.KindPath.AWS_S3:
-      return {
-               kind: kind,
-               region: path.region!,
-               url: url
-             }
-
-    case storage.KindPath.AZURE_BLOB:
-      return {
-               kind: kind,
-               url: url
-             }
-  }
+    return {
+             kind: storage.KindPath.AWS_S3,
+             region: 'us-east-1',
+             url: new URL(path)
+           }
 }
 
 function toOptionalStoragePath(path?: database.StoragePath | null): storage.Path | undefined {
