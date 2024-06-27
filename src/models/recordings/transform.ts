@@ -13,7 +13,7 @@ export type DBRecordingVideo = DBRecording["video"];
 
 export type DBStoragePath = {
   region?: string | null,
-  kind: string,
+  kind?: 'aws-s3' | 'azure-blob' | null,
   url: string
 } | null | undefined;
 
@@ -81,7 +81,7 @@ function toOptionalString(value?: string | null): string | undefined {
 }
 
 function toOptionalStoragePath(path: DBStoragePath): storage.Path | undefined {
-  if (!path) return undefined;
+  if (!path?.kind) return undefined;
 
   const kind = path.kind.valueOf() as storage.KindPaths;
   const url = new URL(path.url);
