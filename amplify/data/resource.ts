@@ -15,7 +15,7 @@ const schema = a.schema({
       localTimeZone: a.string().required(),
       data: a.customType({
         folder: a.customType({
-          kind: a.enum(['awss3', 'azureblob']),
+          kind: a.enum(['aws_s3', 'azure_blob']),
           region: a.string(),
           url: a.url().required()
         })
@@ -24,7 +24,7 @@ const schema = a.schema({
         channelARN: a.string(),
         channelName: a.string(),
         folder: a.customType({
-          kind: a.enum(['awss3', 'azureblob']),
+          kind: a.enum(['aws_s3', 'azure_blob']),
           region: a.string(),
           url: a.url().required()
         }),
