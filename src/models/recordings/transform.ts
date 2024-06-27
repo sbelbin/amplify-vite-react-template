@@ -13,7 +13,7 @@ export type DBRecordingVideo = DBRecording["video"];
 
 export type DBStoragePath = {
   region?: string | null,
-  kind?: 'aws-s3' | 'azure-blob' | null,
+  kind?: 'awss3' | 'azureblob' | null,
   url: string
 } | null | undefined;
 

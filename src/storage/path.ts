@@ -6,8 +6,8 @@
  *   such as Microsoft's Azure Blob storage and OVH's S3 buckets.
  */
 export const enum KindPaths {
-  AWS_S3 = 'aws-s3',
-  Azure_Blob = 'azure-blob'
+  AWS_S3 = 'awss3',
+  Azure_Blob = 'azureblob'
 }
 
 /**
