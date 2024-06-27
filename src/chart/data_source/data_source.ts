@@ -122,7 +122,7 @@ export class ChartDataSource {
       const listFilesFilter = (file: storage.File) =>
                                 !this.filesLoaded.has(file?.Key ?? '');
 
-      const folder = storage.toS3BucketPath(this.folder as storage.AWS_S3_Path)!;
+      const folder = storage.toS3BucketPath(this.folder as storage.AWSS3Path)!;
 
       const listFiles = await storage.listFilesModifiedAfter(this.storageClient,
                                                              folder,

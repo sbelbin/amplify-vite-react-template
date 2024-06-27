@@ -6,8 +6,8 @@
  *   such as Microsoft's Azure Blob storage and OVH's S3 buckets.
  */
 export const enum KindPaths {
-  AWS_S3 = 'aws_s3',
-  Azure_Blob = 'azure_blob'
+  AWS_S3 = 'aws-s3',
+  Azure_Blob = 'azure-blob'
 }
 
 /**
@@ -36,12 +36,12 @@ export interface IPath {
  *   not in the appropriate region, then the S3 bucket might not be found or unreachable
  *   from the default AWS region.
  */
-export interface AWS_S3_Path extends IPath {
+export interface AWSS3Path extends IPath {
   kind: KindPaths.AWS_S3
   region: string;
 }
 
-export interface Azure_Blob_Folder extends IPath {
+export interface AzureBlobFolder extends IPath {
   kind: KindPaths.Azure_Blob;
 }
 
@@ -53,25 +53,27 @@ export interface Azure_Blob_Folder extends IPath {
  *   return value so the application can support alternative storage providers as to minimize the
  *   storage implementation details from the application's core logic.
  */
-export type Path = AWS_S3_Path | Azure_Blob_Folder;
+export type Path = AWSS3Path | AzureBlobFolder;
 
 export function parsePath(text: string): Path | undefined {
-  const intermediary = JSON.parse(text);
+  const path = JSON.parse(text);
 
-  switch (intermediary.kind) {
+  const kind = path.kind as KindPaths;
+  const url = new URL(path.url);
+
+  switch (kind) {
     case KindPaths.AWS_S3:
       return {
-        kind: KindPaths.AWS_S3,
-        region: intermediary.region,
-        url: new URL(intermediary.url)
-      };
+               kind: kind,
+               region: path.region,
+               url: url
+             };
 
     case KindPaths.Azure_Blob:
       return {
-        kind: KindPaths.AWS_S3,
-        region: intermediary.region,
-        url: new URL(intermediary.url)
-      };
+               kind: kind,
+               url: url
+             };
   }
 
   return undefined;

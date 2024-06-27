@@ -11,6 +11,12 @@ export type DBRecording = Schema["recordings"]["type"];
 export type DBRecordingData = DBRecording["data"];
 export type DBRecordingVideo = DBRecording["video"];
 
+export type DBStoragePath = {
+  region?: string | null,
+  kind: 'aws-s3' | 'azure-blob',
+  url: string
+} | null | undefined;
+
 /**
  * Transforms a database representation of a recording session
  * into a representation that is more convenient to use in application code.
@@ -74,14 +80,28 @@ function toOptionalString(value?: string | null): string | undefined {
        : undefined;
 }
 
-function toOptionalStoragePath(path?: string | null): storage.Path | undefined {
-  return (path)
-       ? {
-           kind: storage.KindPaths.AWS_S3,
-           region: 'us-east-1',
-           url: new URL(path)
-         }
-       : undefined;
+function toOptionalStoragePath(path: DBStoragePath): storage.Path | undefined {
+  if (!path) return undefined;
+
+  const kind = path.kind.valueOf() as storage.KindPaths;
+  const url = new URL(path.url);
+
+  switch (kind) {
+    case storage.KindPaths.AWS_S3:
+      return {
+               kind: kind,
+               region: path.region!,
+               url: url
+             }
+
+    case storage.KindPaths.Azure_Blob:
+      return {
+               kind: kind,
+               url: url
+             }
+  }
+
+  return undefined;
 }
 
 function toOptionalURL(url?: string | null): URL | undefined {

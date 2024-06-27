@@ -1,10 +1,10 @@
-import { AWS_S3_Path } from './path';
+import { AWSS3Path } from './path';
 import {
   S3BucketPath,
   S3RegionBucketPath
 } from './s3_bucket_path';
 
-export function toS3BucketPath(path: AWS_S3_Path) : S3BucketPath | undefined {
+export function toS3BucketPath(path: AWSS3Path) : S3BucketPath | undefined {
   return isValidS3URL(path.url)
        ? {
            bucket: getBucket(path.url),
@@ -13,7 +13,7 @@ export function toS3BucketPath(path: AWS_S3_Path) : S3BucketPath | undefined {
        : undefined;
 }
 
-export function toS3RegionBucketPath(path: AWS_S3_Path) : S3RegionBucketPath | undefined {
+export function toS3RegionBucketPath(path: AWSS3Path) : S3RegionBucketPath | undefined {
   return isValidS3URL(path.url)
        ? {
            bucket: getBucket(path.url),

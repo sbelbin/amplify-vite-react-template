@@ -30,7 +30,7 @@ self.onmessage = (event: MessageEvent<RequestMessage>) => {
         const onDisposed = () =>
           self.postMessage({ kind: KindResponseMessage.Disposed });
 
-        const folder = storage.parsePath(msg.folder) as storage.AWS_S3_Path;
+        const folder = storage.parsePath(msg.folder) as storage.AWSS3Path;
 
         chartDataSource = new ChartDataSource(storage.connectWithCredentials(folder.region, msg.sessionCredentials),
                                               folder,
