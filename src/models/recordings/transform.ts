@@ -7,15 +7,17 @@ import { parseDate, parseOptionalDate } from '../../utilities/date_time/parse_da
 
 import type { Schema } from '../../../amplify/data/resource';
 
-export type DBRecording = Schema["recordings"]["type"];
-export type DBRecordingData = DBRecording["data"];
-export type DBRecordingVideo = DBRecording["video"];
+export namespace database {
+  export type Recording = Schema["recordings"]["type"];
+  export type Data = Recording["data"];
+  export type Video = Recording["video"];
 
-export type DBStoragePath = {
-  region?: string | null,
-  kind: 'aws-s3' | 'azure-blob',
-  url: string
-} | null | undefined;
+  export type StoragePath = {
+    kind: 'AWS_S3' | 'AZURE_BLOB',
+    region?: string | null,
+    url: string
+  };
+}
 
 /**
  * Transforms a database representation of a recording session
@@ -24,7 +26,7 @@ export type DBStoragePath = {
  * @param recording: Recording session.
  * @returns An application representation of the recording session.
  */
-export function toRecording(recording: DBRecording): Recording  {
+export function toRecording(recording: database.Recording): Recording  {
   return {
            id: recording.id,
            instituteId: recording.instituteId,
@@ -46,10 +48,10 @@ export function toRecording(recording: DBRecording): Recording  {
  * @param data: Recording session's data field.
  * @returns An application representation of the recording session's data field.
  */
-export function toData(data: DBRecordingData): Data | undefined {
+export function toData(data: database.Data): Data | undefined {
   return (data)
        ? {
-           folder: toOptionalStoragePath(data.folder)
+           folder: toStoragePath(data.folder)
          }
        : undefined;
 }
@@ -61,7 +63,7 @@ export function toData(data: DBRecordingData): Data | undefined {
  * @param video: Recording session's video field.
  * @returns An application representation of the recording session's video field.
  */
-export function toVideo(video: DBRecordingVideo): Video | undefined {
+export function toVideo(video: database.Video): Video | undefined {
   return (video)
        ? {
            channelARN: toOptionalString(video.channelARN),
@@ -75,37 +77,39 @@ export function toVideo(video: DBRecordingVideo): Video | undefined {
 }
 
 function toOptionalString(value?: string | null): string | undefined {
-  return (value !== undefined && value !== null)
-       ? value
+  return hasValue(value)
+       ? value!
        : undefined;
 }
 
-function toOptionalStoragePath(path: DBStoragePath): storage.Path | undefined {
-  if (!path) return undefined;
-
-  const kind = path.kind.valueOf() as storage.KindPaths;
+function toStoragePath(path: database.StoragePath): storage.Path {
+  const kind = path.kind.valueOf() as storage.KindPath;
   const url = new URL(path.url);
 
   switch (kind) {
-    case storage.KindPaths.AWS_S3:
+    case storage.KindPath.AWS_S3:
       return {
                kind: kind,
                region: path.region!,
                url: url
              }
 
-    case storage.KindPaths.Azure_Blob:
+    case storage.KindPath.AZURE_BLOB:
       return {
                kind: kind,
                url: url
              }
   }
+}
 
-  return undefined;
+function toOptionalStoragePath(path?: database.StoragePath | null): storage.Path | undefined {
+  return (path)
+       ? toStoragePath(path)
+       : undefined;
 }
 
 function toOptionalURL(url?: string | null): URL | undefined {
-  return (url)
-       ? new URL(url)
+  return hasValue(url)
+       ? new URL(url!)
        : undefined;
 }

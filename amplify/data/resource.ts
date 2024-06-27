@@ -5,14 +5,14 @@ import {
 } from '@aws-amplify/backend';
 
 const schema = a.schema({
-  kindStoragePaths: a.enum([
-    'aws-s3',
-    'azure-blob'
-  ]),
+  kindStoragePath: a.enum(['AWS_S3', 'AZURE_BLOB']),
   storagePath: a.customType({
-    kind: a.ref('kindStoragePaths').required(),
-    region: a.string(),
-    url: a.url().required()
+    kind: a.ref('kindStoragePath').required(),
+    url: a.url().required(),
+    region: a.string()
+  }),
+  recordingData: a.customType({
+    folder: a.ref('storagePath').required(),
   }),
   recordings: a
     .model({
@@ -22,9 +22,7 @@ const schema = a.schema({
       startTimestamp: a.datetime().required(),
       finishTimestamp: a.datetime(),
       localTimeZone: a.string().required(),
-      data: a.customType({
-        folder: a.ref('storagePath')
-      }),
+      data: a.ref('recordingData').required(),
       video: a.customType({
         channelARN: a.string(),
         channelName: a.string(),
