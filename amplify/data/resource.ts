@@ -5,12 +5,12 @@ import {
 } from '@aws-amplify/backend';
 
 const schema = a.schema({
-  storagePathKinds: a.enum([
+  kindStoragePaths: a.enum([
     'aws-s3',
     'azure-blob'
   ]),
   storagePath: a.customType({
-    kind: a.ref('storagePathKinds').required(),
+    kind: a.ref('kindStoragePaths').required(),
     region: a.string(),
     url: a.url().required()
   }),
