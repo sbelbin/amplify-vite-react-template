@@ -32,7 +32,7 @@ import {
 import {
   chartBuilder,
   EThemeProviderType
-} from "scichart";
+} from 'scichart';
 
 import { SciChartReact } from 'scichart-react';
 

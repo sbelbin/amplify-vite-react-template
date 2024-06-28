@@ -1,17 +1,21 @@
-export enum PlaybackSources {
+export enum PlaybackSource {
   None      = 0,
   Video     = 1,
   Chart     = 2
 }
 
-export enum PlaybackModes {
-  None      = PlaybackSources.None,
-  Video     = PlaybackSources.Video,
-  Chart     = PlaybackSources.Chart,
-  Suspended = 64
+/**
+ * Consider these as bit masks.
+ *
+ * The suspended state can be active whether if the playing is on or off.
+ */
+export enum PlaybackState {
+  Stopped   = 0,
+  Playing   = 1,
+  Paused    = 2
 }
 
 export enum SuspendPlaybackState {
-  On  = PlaybackModes.Suspended,
-  Off = 0
+  Off = 0,
+  On  = 1
 }

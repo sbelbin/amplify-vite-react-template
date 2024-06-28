@@ -1,12 +1,8 @@
 
-import { TimelineChartModifier } from "./timeline_chart_modifier";
-import { TimelineLabelProvider } from "./timeline_label_provider";
-import {
-  IChartViewTimelineNavigation,
-  RestoreTimelineNavigationBehavior
-} from "./types";
-
-import { TimelineOverviewModifier } from "./timeline_overview_modifier";
+import { TimelineChartModifier } from './timeline_chart_modifier';
+import { TimelineLabelProvider } from './timeline_label_provider';
+import { TimelineOverviewModifier } from './timeline_overview_modifier';
+import { IChartViewTimelineNavigation } from './types';
 
 import * as eeg_readings from '../../models/eeg_readings';
 import * as date_time from '../../utilities/date_time';
@@ -67,7 +63,7 @@ const textLabelOffset = -2.0;
  */
 export class ChartView implements timeline_controller.ITimelineChartController,
                                   IChartViewTimelineNavigation {
-  sourceId?: timeline_controller.SourceId;
+  readonly sourceId: timeline_controller.SourceId;
 
   public readonly chart: TWebAssemblyChart;
   private readonly timelineAxis: NumericAxis;
@@ -75,12 +71,13 @@ export class ChartView implements timeline_controller.ITimelineChartController,
 
   private readonly timelineController: timeline_controller.ITimelineController;
   private onRestorePlayback?: timeline_controller.RestorePlayback;
-  private restoreBehavior?: RestoreTimelineNavigationBehavior;
   private definitions?: eeg_readings.SignalDefinitions;
   private readonly annotationDataSeries: XyDataSeries;
   private dataSeries: XyDataSeries[] = [];
 
   private chartOverview?: SciChartOverview;
+
+  private isVisibleRangeChanging: boolean = false;
 
   constructor(chart: TWebAssemblyChart,
               timelineController: timeline_controller.ITimelineController) {
@@ -131,7 +128,7 @@ export class ChartView implements timeline_controller.ITimelineChartController,
       new ZoomPanModifier()
     );
 
-    this.timelineController.addChart(this);
+    this.sourceId = this.timelineController.addChart(this);
   }
 
   /**
@@ -251,8 +248,6 @@ export class ChartView implements timeline_controller.ITimelineChartController,
    * @param segment - A segment of the recording session.
    */
   public loadSegment(segment: eeg_readings.Segment) {
-    console.debug(`Segment spans from ${new Date(segment.timeRange.min)} to ${new Date(segment.timeRange.max)}`);
-
     this.expandTimeline(segment.timeRange);
 
     this.loadAnnotations(segment.annotations);
@@ -271,15 +266,12 @@ export class ChartView implements timeline_controller.ITimelineChartController,
     });
   }
 
-  public startTimelineNavigation(): void {
-    if (this.sourceId === undefined) return;
-
-    this.onRestorePlayback = this.timelineController.startTimelineNavigation(this.sourceId);
+  public startTimelineNavigation():  timeline_controller.RestorePlayback {
+    return this.timelineController.startTimelineNavigation(this.sourceId);
   }
 
-  public stopTimelineNavigation(restoreBehavior: RestoreTimelineNavigationBehavior): void {
-    this.restoreBehavior = restoreBehavior;
-    this.restorePlayback(RestoreTimelineNavigationBehavior.Immediate);
+  public stopTimelineNavigation(restorePlayback?: timeline_controller.RestorePlayback): void {
+    this.onRestorePlayback ??= restorePlayback;
   }
 
   /**
@@ -328,17 +320,15 @@ export class ChartView implements timeline_controller.ITimelineChartController,
     const x1 = Math.max(startTime, revisedTimepoint - visibleRangeDistance/2);
     const x2 = Math.min(x1 + visibleRangeDistance, finishTime);
 
+    this.timelineController.onChangeCurrentTime({
+      sourceId: this.sourceId,
+      timePoint: this.currentTime,
+      timeOffset: this.currentTimeOffset
+    });
+
+    this.restorePlayback();
+
     this.timelineAxis.visibleRange = new NumberRange(Math.min(x1, x2 - visibleRangeDistance), x2);
-
-    if (this.sourceId !== undefined) {
-      this.timelineController.onChangeCurrentTime({
-        sourceId: this.sourceId,
-        timePoint: this.currentTime,
-        timeOffset: this.currentTimeOffset
-      });
-    }
-
-    this.restorePlayback(RestoreTimelineNavigationBehavior.Deferred);
   }
 
   /**
@@ -472,11 +462,15 @@ export class ChartView implements timeline_controller.ITimelineChartController,
    *   movements for horizontal displacements then computing a time-offset based on that.
    */
   private onTimelineVisibleRangeChanged(args?: VisibleRangeChangedArgs): void {
+    if (this.isVisibleRangeChanging) return;
+
     const visibleRange = (args)
                        ? args.visibleRange
                        : this.timelineAxis.visibleRange;
 
+    this.isVisibleRangeChanging = true;
     this.currentTime = (visibleRange.min + visibleRange.max)/2;
+    this.isVisibleRangeChanging = false;
   }
 
   /**
@@ -638,18 +632,21 @@ export class ChartView implements timeline_controller.ITimelineChartController,
    * Restore the timeline controller's playback to its prior state, only when the
    * the restore behavior matches the given restore behavior.
    *
-   * @param matchBehavior - The restore behavior to match against.
-   *
    * @remarks
-   *   When the behaviors match, then the playback callback is invoked and the
-   *   member variables are reset.
+   *   This can be only invoked once and it's reset after being invoked.
+   *
+   *   When working with SciChart's chart modifiers the update to the chart view's visible range
+   *   by using events. Thus, it's necessary to defer restoring of the timeline-controller's
+   *   suspended state a few milliseconds as to account for all events that change the chart
+   *   view's visible range as part of sciChart's chart modifiers operations on the chart view.
    */
-  private restorePlayback(matchBehavior: RestoreTimelineNavigationBehavior): void {
-    if (this.restoreBehavior === matchBehavior) {
-      this.onRestorePlayback?.();
-      this.onRestorePlayback = undefined;
-      this.restoreBehavior = undefined;
-    }
+  private restorePlayback(): void {
+    if (this.onRestorePlayback === undefined) return;
+
+    const restorePlayback = this.onRestorePlayback;
+    this.onRestorePlayback = undefined;
+
+    setTimeout(restorePlayback, 100);
   }
 
   /**

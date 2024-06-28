@@ -1,4 +1,8 @@
-import { ITimelineController } from '../../timeline_controller';
+import {
+  ITimelineController,
+  SourceId
+} from '../../timeline_controller';
+
 import {
   HLSFeed,
   IFeed
@@ -44,6 +48,7 @@ import { HlsConfig } from 'hls.js';
  *   or use AWS IVS player for now and use HLS player earlier points-in-time.
  */
 export class VideoController {
+  readonly sourceId: SourceId;
   private readonly timelineController: ITimelineController;
   private readonly videoView: HTMLVideoElement;
   private videoFeed?: IFeed;
@@ -55,7 +60,7 @@ export class VideoController {
     this.timelineController = timelineController;
     this.videoView = videoView;
     this.videoFeed = new HLSFeed(this.videoView, playbackURL, config);
-    this.timelineController.addVideo(this.videoView);
+    this.sourceId = this.timelineController.addVideo(this.videoView);
   }
 
   dispose(): void {

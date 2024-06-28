@@ -26,10 +26,10 @@ export interface ITimelineController {
   get currentTimeOffset(): duration.Duration;
   set currentTimeOffset(timeOffset: duration.Duration);
 
-  addChart(chart: ITimelineChartController): void;
+  addChart(chart: ITimelineChartController): SourceId;
   removeChart(chart: ITimelineChartController): void;
 
-  addVideo(video: HTMLVideoElement): void;
+  addVideo(video: HTMLVideoElement): SourceId;
   removeVideo(video: HTMLVideoElement): void;
 
   startTimelineNavigation(sourceId: SourceId): RestorePlayback;

@@ -1,4 +1,8 @@
-import { PlaybackModes, SuspendPlaybackState } from './constants';
+import {
+  PlaybackSource,
+  PlaybackState,
+  SuspendPlaybackState
+} from './constants';
 
 import {
   ChangeCurrentTimeEvent,
@@ -56,7 +60,9 @@ export class TimelineController implements ITimelineController
   private video?: HTMLVideoElement;
   private chart?: ITimelineChartController;
 
-  private playbackMode: PlaybackModes = PlaybackModes.None;
+  private playbackState: PlaybackState = PlaybackState.Stopped;
+  private suspendPlaybackState: SuspendPlaybackState = SuspendPlaybackState.Off;
+
   private playbackSynchronizationTimer?: NodeJS.Timer;
   private synchronizationInterval: number = 100;
   private onRestorePlayback?: RestorePlayback;
@@ -98,19 +104,23 @@ export class TimelineController implements ITimelineController
    * @param timePoint - A point-in-time.
    *
    * @remarks
-   *   Pause playback prior to setting the timeline controller's current time, as not to
-   *   introduce a synchronization conflict between the video and chart controllers. Restore the
-   *   playback state after that the specified point-in-time has been applied to both these
-   *   controllers.
+   *   Prior to setting the current time proceed to suspend the time-controller for a brief
+   *   period (a few milliseconds) so that the synchronization issued from the sources are
+   *   ignored during that period after which the time-controller is restored.
+   *
+   *   Because there is a periodic timer which synchronizes the time-controller current time,
+   *   it's necessary to ignore any synchronization events that were issued prior invocation of
+   *   this method. Therefore, the function that restores timeline-controller from it's suspended
+   *   state is invoked by a timer.
    */
   set currentTime(timePoint: date_time.TimePoint) {
-    const onRestorePlayback = this.pause();
+    const onRestorePlayback = this.suspend(PlaybackSource.None);
 
     this._currentTimeOffset = timePoint - this.startTime;
     this.setChartCurrentTime();
     this.setVideoCurrentTime();
 
-    onRestorePlayback();
+    setTimeout(() => onRestorePlayback(), this.synchronizationInterval);
   }
 
   get currentTimeOffset(): duration.Duration {
@@ -121,9 +131,10 @@ export class TimelineController implements ITimelineController
     this._currentTimeOffset = timeOffset;
   }
 
-  addChart(chart: ITimelineChartController): void {
-    chart.sourceId = 1;
+  addChart(chart: ITimelineChartController): SourceId {
+    chart.sourceId = PlaybackSource.Chart;
     this.chart = chart;
+    return PlaybackSource.Chart;
   }
 
   removeChart(chart: ITimelineChartController): void {
@@ -132,13 +143,14 @@ export class TimelineController implements ITimelineController
     }
   }
 
-  addVideo(video: HTMLVideoElement): void {
+  addVideo(video: HTMLVideoElement): SourceId {
     this.video = video;
 
     this.setVideoCurrentTime();
-    this.playbackMode = PlaybackModes.Video;
-    this.currentSourceId = 0;
+    this.currentSourceId = PlaybackSource.Video;
     this.resume();
+
+    return PlaybackSource.Video;
   }
 
   removeVideo(video: HTMLVideoElement): void {
@@ -165,13 +177,11 @@ export class TimelineController implements ITimelineController
    *   the point-in-time from a calendar or clock controls.
    */
   public startTimelineNavigation(sourceId: SourceId): RestorePlayback {
-    const restorePlayback = this.pause();
-    this.currentSourceId = sourceId;
-    return restorePlayback;
+    return this.suspend(sourceId);
   }
 
   public onChangeCurrentTime(event: ChangeCurrentTimeEvent) {
-    if (this.currentSourceId == event.sourceId && !this.isVideoPlaying()) {
+    if (this.currentSourceId === event.sourceId) {
       this._currentTimeOffset = event.timeOffset;
       this.setVideoCurrentTime();
     }
@@ -199,14 +209,11 @@ export class TimelineController implements ITimelineController
    *   to determine if the chart controller is playing or paused state.
    */
   public isPlaying(): boolean {
-    return ((this.playbackMode & PlaybackModes.Video) !== 0)
-        && this.isVideoPlaying();
+    return this.currentSourceId === PlaybackSource.Video && this.isVideoPlaying();
   }
 
   /**
-   * Pause the timeline controller.
-   *
-   * @param state: Playback state to set upon invoking the restore playback function.
+   * Suspend the timeline-controller from automatically progressing.
    *
    * @returns A function to invoke to restore the timeline controller back to its current state.
    *
@@ -233,24 +240,26 @@ export class TimelineController implements ITimelineController
    *   controller. Such that the change events that chart emits to this time controller shall
    *   result in synchronization of the video controller to that of the chart's current time.
    */
-  public pause(state: SuspendPlaybackState = SuspendPlaybackState.On): RestorePlayback {
-    const isPlaying = this.isPlaying();
-    const restoreSourceId = this.currentSourceId;
-
-    if (!isPlaying) {
-      return () => {
-        this.currentSourceId = restoreSourceId;
-        this.playbackMode ^= this.playbackMode & state;
-      }
+  public suspend(sourceId?: SourceId): RestorePlayback {
+    if (this.suspendPlaybackState === SuspendPlaybackState.On) {
+      return () => {};
     }
 
-    this.playbackMode |= state;
+    const playbackState = this.playbackState;
+    const restoreSourceId = this.currentSourceId;
+
+    this.currentSourceId = sourceId ?? this.currentSourceId;
+    this.suspendPlaybackState = SuspendPlaybackState.On;
     this.pauseVideo();
 
     return () => {
              this.currentSourceId = restoreSourceId;
-             this.resume();
-             this.playbackMode ^= this.playbackMode & state;
+             this.suspendPlaybackState = SuspendPlaybackState.Off;
+             this.playbackState = playbackState;
+
+             if (this.playbackState === PlaybackState.Playing) {
+               this.resume();
+             }
            };
   }
 
@@ -262,36 +271,36 @@ export class TimelineController implements ITimelineController
    *   controller current time (ie. current time).
    */
   public resume(): void {
-    if (this.playbackMode !== PlaybackModes.None) {
-      this.startPlaybackSynchronization();
+    if (this.currentSourceId !== PlaybackSource.Video) {
+      this.playbackState = PlaybackState.Stopped;
+      return;
     }
 
-    if (this.playbackMode & PlaybackModes.Video) {
-      this.resumeVideo();
-    }
+    this.resumeVideo();
+    this.startPlaybackSynchronization();
+    this.playbackState = PlaybackState.Playing;
   }
 
   private startPlaybackSynchronization(): void {
-    if (this.playbackSynchronizationTimer) {
-      return;
-    }
+    if (this.playbackSynchronizationTimer) return;
 
     this.playbackSynchronizationTimer =
       setInterval(() => this.onSynchronizePlayback(), this.synchronizationInterval);
   }
 
   private onSynchronizePlayback(): void {
-    if (this.playbackMode & PlaybackModes.Suspended) {
+    if (this.suspendPlaybackState === SuspendPlaybackState.On ||
+        this.playbackState !== PlaybackState.Playing) {
       return;
     }
 
-    switch (this.playbackMode) {
-      case PlaybackModes.Video:
+    switch (this.currentSourceId) {
+      case PlaybackSource.Video:
         this._currentTimeOffset = duration.secondsToDuration(this.video?.currentTime ?? 0);
         this.setChartCurrentTime();
         break;
 
-      case PlaybackModes.Chart:
+      case PlaybackSource.Chart:
         this.chart?.shiftCurrentTime(this.synchronizationInterval);
         break;
     }
@@ -307,9 +316,9 @@ export class TimelineController implements ITimelineController
    *   the patient where they might choose to resume from that moment or skip it.
    */
   private setVideoCurrentTime(): void {
-    if (this.video) {
-      this.video.currentTime = duration.durationToSeconds(this.currentTimeOffset);
-    }
+    if (!this.video) return;
+
+    this.video.currentTime = duration.durationToSeconds(this.currentTimeOffset);
   }
 
   /**
@@ -331,17 +340,16 @@ export class TimelineController implements ITimelineController
    *   which that feed is accessible, then playback resume from that chosen moment.
    */
   private setChartCurrentTime(): void {
-    if (this.chart) {
-      this.chart.currentTime = this.currentTime;
-    }
+    if (!this.chart) return;
 
-    if (this.chart?.isReadyForPlayback) {
+    this.chart.currentTime = this.currentTime;
+
+    if (this.chart.isReadyForPlayback) {
       this.onRestorePlayback?.();
       this.onRestorePlayback = undefined;
     }
     else {
-      const onRestorePlayback = this.pause(SuspendPlaybackState.Off);
-      this.onRestorePlayback ??= onRestorePlayback;
+      this.onRestorePlayback ??= this.suspend();
     }
   }
 

@@ -1,7 +1,5 @@
-import {
-  IChartViewTimelineNavigation,
-  RestoreTimelineNavigationBehavior
-} from './types';
+import { IChartViewTimelineNavigation } from './types';
+import { RestorePlayback } from '../../timeline_controller';
 
 import {
   OverviewRangeSelectionModifier,
@@ -10,7 +8,7 @@ import {
 
 export class TimelineOverviewModifier extends OverviewRangeSelectionModifier {
   private readonly timelineNavigation: IChartViewTimelineNavigation;
-  private readonly restoreTimelineNavigationBehavior = RestoreTimelineNavigationBehavior.Deferred;
+  private onRestorePlayback?: RestorePlayback;
 
   constructor(timelineNavigation: IChartViewTimelineNavigation) {
     super();
@@ -20,12 +18,13 @@ export class TimelineOverviewModifier extends OverviewRangeSelectionModifier {
 
   modifierMouseDown(args: ModifierMouseArgs): void {
     super.modifierMouseDown(args);
-    this.timelineNavigation.startTimelineNavigation();
+    this.onRestorePlayback = this.timelineNavigation.startTimelineNavigation();
   }
 
   modifierMouseUp(args: ModifierMouseArgs): void {
     super.modifierMouseUp(args);
-    this.timelineNavigation.stopTimelineNavigation(this.restoreTimelineNavigationBehavior);
+    this.timelineNavigation.stopTimelineNavigation(this.onRestorePlayback);
+    this.onRestorePlayback = undefined;
   }
 
   modifierMouseWheel(args: ModifierMouseArgs): void {
@@ -42,10 +41,10 @@ export class TimelineOverviewModifier extends OverviewRangeSelectionModifier {
     );
   }
 
-  scopedChartTimelineNavigation(args: ModifierMouseArgs,
-                                action: (args: ModifierMouseArgs) => void) {
-    this.timelineNavigation.startTimelineNavigation();
+  private scopedChartTimelineNavigation(args: ModifierMouseArgs,
+                                        action: (args: ModifierMouseArgs) => void) {
+    const onRestorePlayback = this.timelineNavigation.startTimelineNavigation();
     action(args);
-    this.timelineNavigation.stopTimelineNavigation(this.restoreTimelineNavigationBehavior);
+    this.timelineNavigation.stopTimelineNavigation(onRestorePlayback);
   }
 }

@@ -25,6 +25,34 @@ import {
  * @param buffer - Raw buffer with the contents of the recording session.
  *
  * @returns Returns a recording session payload as a structured representation.
+ *
+ * @todo Provide an interface with callback functions
+ *   To better promote the concept of progressive loading as to be more responsive the idea of
+ *   sending a message at the completion of a phase. Such as when the definitions are read then
+ *   those details are sent immediate in a message thus allowing the chart to be rendered.
+ *
+ *   Additionally, at the end of reading a cycle (record) the sampling values for each of the
+ *   signals can be sent rather than awaiting the reading all sampling values within the segment
+ *   file.
+ *
+ *   A benefit for users is that they are presented with data sooner instead of awaiting that the
+ *   entire file is processed. This enables us to aggregate the small interval file segments into
+ *   a single file in which users and allow for good performance even when the single file is
+ *   several gigabytes.
+ *
+ * @todo To support files of several GB, replace buffer by an reader interface class.
+ *   This parser is a forward directional parser, such that it only move forwards when reading the
+ *   data from the buffer. However, there is a prerequisite that all of the file's contents are
+ *   read into this buffer.
+ *
+ *   This becomes problem when the recording session spans several hours and thus if it's a single
+ *   file will be several gigabytes in size. Fetching the entire file into memory isn't possible.
+ *
+ *   Therefore a mechanism is required such that an interface is provided such that the data is
+ *   pulled from storage when required by the parser. Since this parser is a forward directional
+ *   parser, the recommendation would be to have a read-ahead buffer of several mega-bytes.
+ *
+ *   The change is to replace the buffer by an interface that provides the data to the parser.
  */
 export function readPayload(buffer: ArrayBuffer) : Payload {
   const parser = new Parser(buffer);
@@ -367,6 +395,17 @@ function readDefinitions(parser: Parser,
  * @param samplePeriod - The sample period of a single record.
  * @param definitions - The signal definitions which includes those for annotations.
  * @returns A segment of the recording session's annotations and sampling values.
+ *
+ * @todo Use samples iterator
+ *   For each record and for each samples set (i.e. signal) there is a look by identifier to match
+ *   a definition to a particular samples set.
+ *
+ *   This look isn't necessary since and can be replaced by using an iterator on the set of samples.
+ *   At the start of each record just set the samples set iterator to the beginning and then after
+ *   reading a samples values to advance the iterator to the next samples set.
+ *
+ *   A minor side-benefit is that we rid the need of signalId field from the Samples interface as
+ *   well as the id from the SignalDefinition structure. These were indexed offset based anyways.
  */
 function readSegment(parser: Parser,
                      startTime: date_time.TimePoint,

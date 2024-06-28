@@ -1,9 +1,6 @@
-export enum RestoreTimelineNavigationBehavior {
-  Immediate,
-  Deferred
-}
+import { RestorePlayback } from '../../timeline_controller';
 
 export interface IChartViewTimelineNavigation {
-  startTimelineNavigation(): void;
-  stopTimelineNavigation(restoreBehavior: RestoreTimelineNavigationBehavior): void;
+  startTimelineNavigation(): RestorePlayback;
+  stopTimelineNavigation(restorePlayback?: RestorePlayback): void;
 }

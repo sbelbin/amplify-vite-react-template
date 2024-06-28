@@ -1,4 +1,4 @@
-import hasValue from "../optional/has_value";
+import hasValue from '../optional/has_value';
 
 /**
  * Formats a timestamp in a manner that is consistent for all users.
